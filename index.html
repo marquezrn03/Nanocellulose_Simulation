@@ -119,6 +119,11 @@
         .app-box { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1); font-size: 0.75rem; line-height: 1.4; color: #cbd5e1; }
         .app-title { font-weight: 700; color: #fff; margin-bottom: 4px; display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;}
 
+        @keyframes alert-flash {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.4); border-color: rgba(255, 0, 85, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(255, 0, 85, 1); border-color: #ff0055; background: rgba(255, 0, 85, 0.25); }
+        }
+
         #loader {
             position: fixed; inset: 0; background: var(--bg); z-index: 999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -156,6 +161,10 @@
             <div class="app-box">
                 <span class="app-title">Primary Industrial Application</span>
                 <span id="stat-app">Standard paper products, cardboard, packaging. Low nanoscale functionality.</span>
+            </div>
+
+            <div id="warning-box" style="display: none; margin-top: 14px; padding: 12px; background: rgba(255, 0, 85, 0.15); border-radius: 6px; border: 2px solid #ff0055; font-size: 0.75rem; line-height: 1.4; color: #ffbbcc; text-align: center; animation: alert-flash 1s infinite;">
+                ⚠️ <strong>ALERT: FIBER CHOPPING POINT</strong><br>Enzyme dosage &ge; 4 FPU/g causes severe cellulose hydrolysis and chain cleavage into CNCs.
             </div>
         </div>
     </div>
@@ -199,8 +208,16 @@
                     <input type="range" id="slider-pulp" min="0" max="1" step="0.01" value="0">
                 </div>
                 <div class="row">
-                    <div class="label">
-                        <span class="label-title">ECF Bleaching (D-E-D)</span>
+                    <div class="label" style="margin-bottom: 4px;">
+                        <span class="label-title">Bleaching Sequence</span>
+                    </div>
+                    <select id="sel-bleach-type">
+                        <option value="ecf">ECF (D-E-D) - Chlorine Dioxide</option>
+                        <option value="tcf-h2o2">TCF (P-Q-P) - Hydrogen Peroxide</option>
+                        <option value="tcf-o3">TCF (Z-E-P) - Ozone</option>
+                    </select>
+                    <div class="label" style="margin-top: 10px;">
+                        <span class="label-title">Chemical Charge</span>
                         <span class="val" id="val-bleach">0% ClO₂</span>
                     </div>
                     <input type="range" id="slider-bleach" min="0" max="1" step="0.01" value="0">
@@ -276,7 +293,7 @@
 
         const state = {
             rawBiomass: 'softwood',
-            pulping: 0, bleaching: 0,
+            pulping: 0, bleaching: 0, bleachType: 'ecf',
             preType: 'none', preDeg: 0,
             mechType: 'grinder', energy: 0,
             postType: 'none', postDeg: 0,
@@ -349,13 +366,21 @@
             const aa = 12 + (state.pulping * 10);
             const temp = 20 + (state.pulping * 150);
             $('val-pulp').textContent = `AA: ${aa.toFixed(1)}%, ${Math.round(temp)}°C`;
-            $('val-bleach').textContent = (state.bleaching * 4.5).toFixed(1) + '% ClO₂';
+            
+            if (state.bleachType === 'ecf') {
+                $('val-bleach').textContent = (state.bleaching * 4.5).toFixed(1) + '% ClO₂';
+            } else if (state.bleachType === 'tcf-h2o2') {
+                $('val-bleach').textContent = (state.bleaching * 6.0).toFixed(1) + '% H₂O₂';
+            } else if (state.bleachType === 'tcf-o3') {
+                $('val-bleach').textContent = (state.bleaching * 1.5).toFixed(1) + '% O₃';
+            }
 
             updateShellColors();
         }
 
         // Bindings
         $('sel-biomass').addEventListener('change', e => { state.rawBiomass = e.target.value; updateComposition(); buildArchitecture(); });
+        $('sel-bleach-type').addEventListener('change', e => { state.bleachType = e.target.value; updateComposition(); });
         $('sel-pre').addEventListener('change', e => { state.preType = e.target.value; formatPretreatment(); });
         $('sel-mech').addEventListener('change', e => { state.mechType = e.target.value; formatEnergy(); });
         $('sel-post').addEventListener('change', e => { state.postType = e.target.value; formatPost(); updatePostColors(); });
@@ -472,6 +497,13 @@
             const hemiBoost = state.relComp.hem / 25.0; 
             let effectiveEnergy = state.energy * (1.0 - ligninBlock) * (1.0 + hemiBoost * 0.2);
 
+            // Enzymatic Pretreatment: Low dose facilitates fibrillation (loosens structure)
+            let enzymeFacilitation = 0;
+            if (state.preType === 'enzyme') {
+                enzymeFacilitation = state.preDeg * 2.0; // Boosts effective energy
+                effectiveEnergy *= (1.0 + enzymeFacilitation);
+            }
+
             const chargeRepulsion = Math.abs(zeta) / 60; 
             effectiveEnergy = Math.min(1.0, effectiveEnergy + (chargeRepulsion * state.energy * 2.5));
             const staticSwelling = chargeRepulsion * 0.5;
@@ -516,8 +548,9 @@
 
                     if (state.preType === 'enzyme' && !cryst) {
                         const digest = 1.0 - (state.preDeg * 1.5);
-                        scaleX *= Math.max(0, digest); zMult *= Math.max(0, digest);
-                        if(digest < 0.1) broken = true;
+                        scaleX *= Math.max(0.1, digest); zMult *= Math.max(0.1, digest);
+                        // Strict threshold: >= 4.0 FPU (slider >= 0.08) chops fibers
+                        if(state.preDeg >= 0.08) broken = true; 
                     }
                     if (state.mechType === 'hph' && effectiveEnergy > 0 && !cryst) {
                         if (((f.id * 7 + j * 13) % 100 / 100) < effectiveEnergy * 0.8 * (1 - state.relComp.hem / 100)) broken = true;
@@ -563,6 +596,14 @@
             $('stat-zeta').textContent = Math.round(state.zetaPotential) + ' mV';
             const isBlocked = state.relComp.lig > 12;
 
+            // Trigger Warning for High Enzymatic Degradation
+            // 0.08 corresponds to exactly 4.0 FPU/g on the 50 FPU scale
+            if (state.preType === 'enzyme' && state.preDeg >= 0.08) {
+                $('warning-box').style.display = 'block';
+            } else {
+                $('warning-box').style.display = 'none';
+            }
+
             // Film Property Model (PhD Level estimations)
             let baseTS = 45; // Base paper ~45 MPa
             let baseYM = 3.5; // GPa
@@ -575,12 +616,18 @@
                 state.morphology = "TOCNF (Individualized Nanorods)"; state.aspect = 450;
                 baseTS = 250; baseYM = 16.0; baseStrain = 4.0;
                 app = "High-barrier oxygen packaging, transparent flexible electronics, high-end rheology modifiers.";
-            } else if (effectiveEnergy > 0.5 && state.preType === 'enzyme') {
+            } else if (effectiveEnergy > 0.4 && state.preType === 'enzyme' && state.preDeg >= 0.08) {
+                // High Enzyme Dose (>= 4 FPU) isolates CNC
                 state.morphology = "Cellulose Nanocrystals (CNC)"; state.aspect = 25;
                 baseTS = 90; baseYM = 20.0; baseStrain = 1.0; // Brittle but stiff
                 app = "Iridescent photonic films, strengthening additive for nanocomposites, emulsion stabilizers.";
-            } else if (effectiveEnergy > 0.6) {
-                if(state.mechType === 'grinder') { state.morphology = "CNF (Entangled Gel Network)"; state.aspect = 120; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; app = "Strong nanopaper, hydrogels for tissue engineering, thickeners."; }
+            } else if (effectiveEnergy > 0.6 || (state.preType === 'enzyme' && state.preDeg < 0.08 && effectiveEnergy > 0.2)) {
+                // Low Enzyme Dose (< 4 FPU) explicitly promotes long, flexible CNF at much lower energy inputs
+                if(state.mechType === 'grinder' || (state.preType === 'enzyme' && state.preDeg < 0.08)) { 
+                    state.morphology = state.preType === 'enzyme' ? "Enzymatic CNF (Flexible)" : "CNF (Entangled Gel Network)"; 
+                    state.aspect = 120; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; 
+                    app = "Strong nanopaper, hydrogels for tissue engineering, thickeners."; 
+                }
                 else if(state.mechType === 'super') { state.morphology = "Highly Branched CNF Web"; state.aspect = 35; baseTS = 130; baseYM = 8.0; baseStrain = 8.0; app = "Absorbent materials, aerogel precursors, filtration membranes."; }
                 else { state.morphology = "Microfibrillated Cellulose (MFC)"; state.aspect = 60; baseTS = 110; baseYM = 9.0; baseStrain = 4.0; app = "Paper coating, cement additives, low-cost bio-fillers."; }
             } else if (effectiveEnergy > 0.1 || staticSwelling > 0.1) {
