@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nanocellulose Digital Twin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nanocellulose Digital Twin - PhD Level</title>
     <style>
         :root {
             --bg: #030407;
@@ -23,10 +23,11 @@
         body {
             margin: 0; padding: 0; overflow: hidden;
             background: var(--bg); font-family: 'Inter', system-ui, sans-serif;
-            color: var(--text-main); user-select: none; touch-action: none;
+            color: var(--text-main); user-select: none;
         }
 
-        #canvas-container { position: absolute; inset: 0; z-index: 1; }
+        /* 3D Canvas captures model rotation/zoom, blocks page scroll */
+        #canvas-container { position: absolute; inset: 0; z-index: 1; touch-action: none; }
 
         /* Sidebar UI */
         #ui-panel {
@@ -35,16 +36,18 @@
             border-right: 1px solid var(--border); z-index: 10;
             display: flex; flex-direction: column;
             box-shadow: 10px 0 50px rgba(0,0,0,0.8);
+            transition: all 0.3s ease-in-out;
         }
 
-        .header { padding: 20px 24px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3); position: relative; }
+        .header { padding: 20px 24px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.3); position: relative; flex-shrink: 0;}
         .header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #fff;}
         .header p { margin: 4px 0 0; font-size: 0.75rem; color: var(--primary); font-family: monospace; letter-spacing: 0.5px;}
         .badge { position: absolute; top: 22px; right: 24px; background: rgba(0,229,255,0.1); border: 1px solid var(--primary); color: var(--primary); font-size: 0.6rem; padding: 3px 6px; border-radius: 4px; font-weight: bold; letter-spacing: 1px; animation: pulse 2s infinite; }
 
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); } 70% { box-shadow: 0 0 0 6px rgba(0,229,255,0); } 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0); } }
 
-        .controls { flex: 1; overflow-y: auto; padding: 24px; }
+        /* Controls Area allows native scrolling on touch devices */
+        .controls { flex: 1; overflow-y: auto; padding: 24px; touch-action: pan-y; }
         .controls::-webkit-scrollbar { width: 6px; }
         .controls::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
@@ -101,9 +104,11 @@
         #analytics {
             position: absolute; top: 24px; right: 24px; width: 340px;
             background: var(--panel); border: 1px solid var(--border);
-            border-radius: 8px; backdrop-filter: blur(12px); z-index: 10; pointer-events: none;
+            border-radius: 8px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            z-index: 10; pointer-events: none;
             display: flex; flex-direction: column; overflow: hidden;
             box-shadow: -5px 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s ease-in-out;
         }
         .stat-section { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .stat-section:last-child { border-bottom: none; background: rgba(0,229,255,0.02); }
@@ -114,10 +119,16 @@
         .stat-line { display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.8rem; margin-bottom: 8px; }
         .stat-line:last-child { margin-bottom: 0; }
         .stat-label { color: var(--text-muted); }
-        .stat-line span:last-child { color: var(--primary); font-family: monospace; font-weight: bold; font-size: 0.9rem;}
+        .stat-line span:last-child { color: var(--primary); font-family: monospace; font-weight: bold; font-size: 0.9rem; text-align: right;}
 
         .app-box { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1); font-size: 0.75rem; line-height: 1.4; color: #cbd5e1; }
         .app-title { font-weight: 700; color: #fff; margin-bottom: 4px; display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        #warning-box {
+            display: none; margin-top: 14px; padding: 12px; background: rgba(255, 0, 85, 0.15);
+            border-radius: 6px; border: 2px solid #ff0055; font-size: 0.75rem;
+            line-height: 1.4; color: #ffbbcc; text-align: center;
+        }
 
         #loader {
             position: fixed; inset: 0; background: var(--bg); z-index: 999;
@@ -127,10 +138,60 @@
         .spinner { width: 50px; height: 50px; border: 2px solid rgba(0,229,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        @media (max-width: 900px) {
-            #ui-panel { width: 100%; height: 50vh; top: auto; bottom: 0; border-right: none; border-top: 1px solid var(--border); }
-            #analytics { top: 10px; right: 10px; width: 280px; }
+        /* ================= RESPONSIVE DESIGN ================= */
+
+        /* Tablet Layout */
+        @media (max-width: 1024px) {
+            #ui-panel { width: 340px; }
+            #analytics { width: 300px; top: 16px; right: 16px; }
+            .header { padding: 16px 20px; }
+            .controls { padding: 20px; }
             .stat-line { font-size: 0.75rem; }
+        }
+
+        /* Mobile Layout */
+        @media (max-width: 768px) {
+            #ui-panel {
+                width: 100%; height: 50vh; top: auto; bottom: 0;
+                border-right: none; border-top: 1px solid var(--border);
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+            }
+            .header { padding: 14px 20px; border-radius: 20px 20px 0 0; }
+            .header h1 { font-size: 1.1rem; }
+            
+            #analytics {
+                top: 10px; left: 10px; right: 10px; width: auto;
+                background: rgba(10, 14, 20, 0.65); /* More transparent for visibility */
+                pointer-events: auto; max-height: 45vh; overflow-y: auto;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            }
+            /* Scrollbar for analytics on mobile */
+            #analytics::-webkit-scrollbar { width: 4px; }
+            #analytics::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+            .stat-section { padding: 12px; }
+            .stat-header { font-size: 0.65rem; margin-bottom: 8px; }
+            .stat-line { font-size: 0.7rem; margin-bottom: 6px; }
+            .stat-line span:last-child { font-size: 0.8rem; }
+            .app-box { font-size: 0.65rem; padding: 8px; margin-top: 8px; }
+            #warning-box { padding: 8px; font-size: 0.65rem; margin-top: 8px; }
+
+            /* Enlarged hit targets for mobile sliders */
+            input[type=range]::-webkit-slider-thumb {
+                height: 24px; width: 24px; margin-top: -9px;
+            }
+        }
+
+        /* Small Mobile Adjustments */
+        @media (max-width: 480px) {
+            #ui-panel { height: 55vh; }
+            .controls { padding: 16px; }
+            .step { padding: 14px; margin-bottom: 16px; }
+            .step-title { font-size: 0.7rem; margin-bottom: 12px; }
+            .label { font-size: 0.7rem; flex-direction: column; align-items: flex-start; gap: 4px; }
+            .val { align-self: flex-start; }
+            select { padding: 8px 10px; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -158,7 +219,7 @@
                 <span id="stat-app">Standard paper products, cardboard, packaging. Low nanoscale functionality.</span>
             </div>
 
-            <div id="warning-box" style="display: none; margin-top: 14px; padding: 12px; background: rgba(255, 0, 85, 0.15); border-radius: 6px; border: 2px solid #ff0055; font-size: 0.75rem; line-height: 1.4; color: #ffbbcc; text-align: center;">
+            <div id="warning-box">
                 ⚠️ <strong>RISK OF ENZYMATIC HYDROLYSIS</strong><br>High enzyme dosages significantly increase the risk of severe cellulose depolymerization and structural degradation.
             </div>
         </div>
@@ -492,10 +553,10 @@
             const hemiBoost = state.relComp.hem / 25.0; 
             let effectiveEnergy = state.energy * (1.0 - ligninBlock) * (1.0 + hemiBoost * 0.2);
 
-            // Enzymatic Pretreatment: Low dose facilitates fibrillation (loosens structure)
+            // Enzymatic Pretreatment: Low dose facilitates fibrillation
             let enzymeFacilitation = 0;
             if (state.preType === 'enzyme') {
-                enzymeFacilitation = state.preDeg * 2.0; // Boosts effective energy
+                enzymeFacilitation = state.preDeg * 2.0; 
                 effectiveEnergy *= (1.0 + enzymeFacilitation);
             }
 
@@ -544,9 +605,8 @@
                     if (state.preType === 'enzyme' && !cryst) {
                         const digest = 1.0 - (state.preDeg * 1.5);
                         scaleX *= Math.max(0.1, digest); zMult *= Math.max(0.1, digest);
-                        // Gradual chopping: probability scales up after 4.0 FPU (0.08) threshold
                         if (state.preDeg >= 0.08) {
-                            const breakProb = (state.preDeg - 0.08) * 2.5; // Reaches 100% probability around 0.48
+                            const breakProb = (state.preDeg - 0.08) * 2.5; 
                             const enzHash = (f.id * 31 + j * 17) % 100 / 100;
                             if (enzHash < breakProb) broken = true;
                         }
@@ -595,8 +655,6 @@
             $('stat-zeta').textContent = Math.round(state.zetaPotential) + ' mV';
             const isBlocked = state.relComp.lig > 12;
 
-            // Trigger Warning for High Enzymatic Degradation
-            // 0.08 corresponds to exactly 4.0 FPU/g on the 50 FPU scale
             if (state.preType === 'enzyme' && state.preDeg >= 0.08) {
                 $('warning-box').style.display = 'block';
             } else {
@@ -609,7 +667,6 @@
             let baseStrain = 2.0; // %
             let app = "Standard paper products, cardboard, packaging. Low nanoscale functionality.";
             
-            // Use local variables to prevent infinite string concatenation in the render loop
             let currentMorph = "Intact Wood Fiber";
             let currentAspect = 10;
 
@@ -620,9 +677,7 @@
                 baseTS = 250; baseYM = 16.0; baseStrain = 4.0;
                 app = "High-barrier oxygen packaging, transparent flexible electronics, high-end rheology modifiers.";
             } else if (effectiveEnergy > 0.4 && state.preType === 'enzyme' && state.preDeg >= 0.08) {
-                // High Enzyme Dose (>= 4 FPU) hydrolyzes gradually into CNC
                 const chopDegree = Math.min(1.0, (state.preDeg - 0.08) * 2.5);
-                
                 if (chopDegree > 0.8) {
                     currentMorph = "Cellulose Nanocrystals (CNC)";
                     app = "Iridescent photonic films, strengthening additive for nanocomposites, emulsion stabilizers.";
@@ -630,13 +685,11 @@
                     currentMorph = "CNF / CNC Mixture (Hydrolyzed)";
                     app = "Rheology modifiers, hybrid structural films, hydrogel networks.";
                 }
-                
-                currentAspect = Math.round(120 - (95 * chopDegree)); // Smooth transition from 120 down to 25
-                baseTS = 180 - (90 * chopDegree); // Strength decreases as fibers shorten
-                baseYM = 12.0 + (8.0 * chopDegree); // Stiffness increases as it becomes purely crystalline
-                baseStrain = 6.0 - (5.0 * chopDegree); // Becomes more brittle
+                currentAspect = Math.round(120 - (95 * chopDegree)); 
+                baseTS = 180 - (90 * chopDegree); 
+                baseYM = 12.0 + (8.0 * chopDegree); 
+                baseStrain = 6.0 - (5.0 * chopDegree); 
             } else if (effectiveEnergy > 0.6 || (state.preType === 'enzyme' && state.preDeg < 0.08 && effectiveEnergy > 0.2)) {
-                // Low Enzyme Dose (< 4 FPU) explicitly promotes long, flexible CNF at much lower energy inputs
                 if(state.mechType === 'grinder' || (state.preType === 'enzyme' && state.preDeg < 0.08)) { 
                     currentMorph = state.preType === 'enzyme' ? "Enzymatic CNF (Flexible)" : "CNF (Entangled Gel Network)"; 
                     currentAspect = 120; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; 
@@ -653,37 +706,34 @@
 
             // Lignin Penalty/Bonus
             if (state.relComp.lig > 5) {
-                baseTS -= state.relComp.lig * 2.5; // Lignin reduces TS
-                baseStrain += state.relComp.lig * 0.1; // Increases toughness slightly
+                baseTS -= state.relComp.lig * 2.5; 
+                baseStrain += state.relComp.lig * 0.1; 
                 app = "Hydrophobic barriers, UV-blocking films, unbleached kraft specialties.";
             }
 
             // Post-treatment modifications
             if(state.postType === 'laccase' && state.postDeg > 0.1) {
                 currentMorph = "DHP Lignin-Grafted " + currentMorph;
-                baseTS += 15 * state.postDeg; // Lignin acts as a stiff binder
-                baseYM += 4.5 * state.postDeg; // Increases stiffness/modulus
-                baseStrain *= (1 - 0.4 * state.postDeg); // Makes the film more brittle
+                baseTS += 15 * state.postDeg; 
+                baseYM += 4.5 * state.postDeg; 
+                baseStrain *= (1 - 0.4 * state.postDeg); 
                 app = "Antimicrobial active packaging, antioxidant food wraps, hydrophobic structural composites.";
             }
             if(state.postType === 'polymer' && state.postDeg > 0.1) {
                 currentMorph = "PVA/PLA " + currentMorph + " Nanocomposite";
-                // Polymer matrix softens the stiff cellulose network, increasing ductility drastically but lowering ultimate strength
-                baseTS = baseTS * (1 - state.postDeg * 0.7) + 45 * state.postDeg; // Drags down to ~45 MPa bulk polymer strength
-                baseYM = baseYM * (1 - state.postDeg * 0.8) + 2.5 * state.postDeg; // Drags down to bulk polymer modulus
-                baseStrain = baseStrain * (1 - state.postDeg) + 25.0 * state.postDeg; // Massively increases strain at break
+                baseTS = baseTS * (1 - state.postDeg * 0.7) + 45 * state.postDeg; 
+                baseYM = baseYM * (1 - state.postDeg * 0.8) + 2.5 * state.postDeg; 
+                baseStrain = baseStrain * (1 - state.postDeg) + 25.0 * state.postDeg; 
                 app = "Fully biodegradable thermoformable plastics, 3D printing filaments, flexible packaging.";
             }
             if(state.postType === 'ions' && state.postDeg > 0.1) {
                 currentMorph = "Ionically Modified " + currentMorph;
-                // Cationic polymers create strong electrostatic crosslinks between anionic fibrils
                 baseTS += 40 * state.postDeg; 
                 baseYM += 2.0 * state.postDeg;
                 baseStrain *= (1 - 0.2 * state.postDeg);
                 app = "High-wet-strength papers, heavy metal adsorption membranes, advanced functional coatings.";
             }
 
-            // Write back to state once per frame
             state.morphology = currentMorph;
             state.aspect = currentAspect;
 
