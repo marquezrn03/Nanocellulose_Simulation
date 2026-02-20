@@ -119,11 +119,6 @@
         .app-box { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1); font-size: 0.75rem; line-height: 1.4; color: #cbd5e1; }
         .app-title { font-weight: 700; color: #fff; margin-bottom: 4px; display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;}
 
-        @keyframes alert-flash {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 0, 85, 0.4); border-color: rgba(255, 0, 85, 0.5); }
-            50% { box-shadow: 0 0 30px rgba(255, 0, 85, 1); border-color: #ff0055; background: rgba(255, 0, 85, 0.25); }
-        }
-
         #loader {
             position: fixed; inset: 0; background: var(--bg); z-index: 999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -163,8 +158,8 @@
                 <span id="stat-app">Standard paper products, cardboard, packaging. Low nanoscale functionality.</span>
             </div>
 
-            <div id="warning-box" style="display: none; margin-top: 14px; padding: 12px; background: rgba(255, 0, 85, 0.15); border-radius: 6px; border: 2px solid #ff0055; font-size: 0.75rem; line-height: 1.4; color: #ffbbcc; text-align: center; animation: alert-flash 1s infinite;">
-                ⚠️ <strong>RISK OF ENZYMATIC HYDROLYSIS</strong><br>Enzyme dosages &ge; 4 FPU/g significantly increase the risk of severe cellulose depolymerization and structural degradation.
+            <div id="warning-box" style="display: none; margin-top: 14px; padding: 12px; background: rgba(255, 0, 85, 0.15); border-radius: 6px; border: 2px solid #ff0055; font-size: 0.75rem; line-height: 1.4; color: #ffbbcc; text-align: center;">
+                ⚠️ <strong>RISK OF ENZYMATIC HYDROLYSIS</strong><br>High enzyme dosages significantly increase the risk of severe cellulose depolymerization and structural degradation.
             </div>
         </div>
     </div>
@@ -266,7 +261,7 @@
                     <option value="none">None (Pure Nanocellulose)</option>
                     <option value="laccase">Laccase Lignin Polymerization</option>
                     <option value="polymer">PVA/PLA Polymer Matrix</option>
-                    <option value="ions">Cationic Polymer Flocculation</option>
+                    <option value="ions">Cationic Polymer Treatment</option>
                 </select>
                 <div class="row">
                     <div class="label">
@@ -662,20 +657,26 @@
             // Post-treatment modifications
             if(state.postType === 'laccase' && state.postDeg > 0.1) {
                 state.morphology = "DHP Lignin-Grafted " + state.morphology;
-                baseTS -= 10 * state.postDeg; baseYM += 2 * state.postDeg;
-                app = "Antimicrobial active packaging, antioxidant food wraps, hydrophobic composites.";
+                baseTS += 15 * state.postDeg; // Lignin acts as a stiff binder
+                baseYM += 4.5 * state.postDeg; // Increases stiffness/modulus
+                baseStrain *= (1 - 0.4 * state.postDeg); // Makes the film more brittle
+                app = "Antimicrobial active packaging, antioxidant food wraps, hydrophobic structural composites.";
             }
             if(state.postType === 'polymer' && state.postDeg > 0.1) {
                 state.morphology = "PVA/PLA " + state.morphology + " Nanocomposite";
-                // Moves towards polymer properties (PLA ~60 MPa TS, higher strain)
-                baseTS = baseTS * (1 - state.postDeg) + 60 * state.postDeg;
-                baseYM = baseYM * (1 - state.postDeg) + 3.0 * state.postDeg;
-                baseStrain = baseStrain * (1 - state.postDeg) + 20.0 * state.postDeg;
-                app = "Fully biodegradable structural plastics, 3D printing filaments, tissue engineering scaffolds.";
+                // Polymer matrix softens the stiff cellulose network, increasing ductility drastically but lowering ultimate strength
+                baseTS = baseTS * (1 - state.postDeg * 0.7) + 45 * state.postDeg; // Drags down to ~45 MPa bulk polymer strength
+                baseYM = baseYM * (1 - state.postDeg * 0.8) + 2.5 * state.postDeg; // Drags down to bulk polymer modulus
+                baseStrain = baseStrain * (1 - state.postDeg) + 25.0 * state.postDeg; // Massively increases strain at break
+                app = "Fully biodegradable thermoformable plastics, 3D printing filaments, flexible packaging.";
             }
             if(state.postType === 'ions' && state.postDeg > 0.1) {
                 state.morphology = "Ionically Modified " + state.morphology;
-                app = "Heavy metal adsorption (water treatment), advanced flocculants, smart responsive hydrogels.";
+                // Cationic polymers create strong electrostatic crosslinks between anionic fibrils
+                baseTS += 40 * state.postDeg; 
+                baseYM += 2.0 * state.postDeg;
+                baseStrain *= (1 - 0.2 * state.postDeg);
+                app = "High-wet-strength papers, heavy metal adsorption membranes, advanced functional coatings.";
             }
 
             $('stat-morph').textContent = state.morphology;
