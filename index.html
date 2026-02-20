@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photorealistic 3D Cellulose Processing Simulator</title>
+    <style>
+        :root {
+            --bg: #05070a;
+            --panel: rgba(12, 16, 24, 0.85);
+            --primary: #00e5ff;
+            --accent: #ff0055;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            
+            /* Composition Colors */
+            --c-cel: #e2e8f0;   /* White/Grey */
+            --c-hem: #d4b85c;   /* Yellowish */
+            --c-lig: #8b5a2b;   /* Dark Brown */
+        }
+
+        body {
+            margin: 0; padding: 0; overflow: hidden;
+            background: var(--bg); font-family: 'Inter', system-ui, sans-serif;
+            color: var(--text-main); user-select: none; touch-action: none;
+        }
+
+        #canvas-container { position: absolute; inset: 0; z-index: 1; }
+
+        /* Sidebar UI */
+        #ui-panel {
+            position: absolute; top: 0; left: 0; width: 380px; height: 100vh;
+            background: var(--panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid var(--border); z-index: 10;
+            display: flex; flex-direction: column;
+            box-shadow: 10px 0 40px rgba(0,0,0,0.6);
+        }
+
+        .header { padding: 24px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+        .header h1 { margin: 0; font-size: 1.15rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #fff;}
+        .header p { margin: 6px 0 0; font-size: 0.8rem; color: var(--primary); font-family: monospace;}
+
+        .controls { flex: 1; overflow-y: auto; padding: 24px; }
+        .controls::-webkit-scrollbar { width: 4px; }
+        .controls::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+        .step {
+            background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px; padding: 16px; margin-bottom: 20px;
+        }
+
+        .step-title {
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: #fff; margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .row { margin-bottom: 14px; }
+        .row:last-child { margin-bottom: 0; }
+        
+        .label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px; color: var(--text-muted); }
+        .val { color: var(--primary); font-family: monospace; font-weight: bold; }
+
+        /* Composition Bar */
+        .comp-display { margin-bottom: 16px; }
+        .comp-bar {
+            display: flex; height: 14px; border-radius: 7px; overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); border: 1px solid var(--border);
+        }
+        .comp-segment { height: 100%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .comp-segment span { font-size: 0.6rem; font-weight: bold; color: #000; opacity: 0.8; }
+        .c-cel { background: var(--c-cel); width: 45%; }
+        .c-hem { background: var(--c-hem); width: 25%; }
+        .c-lig { background: var(--c-lig); width: 30%; }
+
+        .legend { display: flex; justify-content: space-between; font-size: 0.7rem; margin-top: 8px; color: var(--text-muted); }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        select, input[type=range] { width: 100%; }
+        select {
+            background: rgba(0,0,0,0.4); color: #fff; border: 1px solid var(--border);
+            padding: 8px 12px; border-radius: 4px; font-size: 0.85rem; outline: none; margin-bottom: 8px;
+        }
+        
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: var(--primary); margin-top: -6px; cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+
+        #analytics {
+            position: absolute; top: 24px; right: 24px; width: 300px;
+            background: var(--panel); border: 1px solid var(--border);
+            padding: 20px; border-radius: 8px; backdrop-filter: blur(12px); z-index: 10; pointer-events: none;
+        }
+        .stat-header { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .stat-line { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 10px; }
+        .stat-line:last-child { margin-bottom: 0; }
+        .stat-line span:last-child { color: var(--primary); font-family: monospace; font-weight: bold; }
+
+        #loader {
+            position: fixed; inset: 0; background: var(--bg); z-index: 999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--primary); font-family: monospace; letter-spacing: 2px; transition: opacity 0.5s;
+        }
+        .spinner {
+            width: 40px; height: 40px; border: 2px solid rgba(0,229,255,0.2);
+            border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        @media (max-width: 800px) {
+            #ui-panel { width: 100%; height: 50vh; top: auto; bottom: 0; border-right: none; border-top: 1px solid var(--border); }
+            #analytics { top: 10px; right: 10px; width: auto; font-size: 0.7rem; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="spinner"></div>GENERATING BIOMASS ARCHITECTURE...</div>
+    <div id="canvas-container"></div>
+
+    <div id="analytics">
+        <div class="stat-header">Real-Time Analytical Data</div>
+        <div class="stat-line"><span>Kappa Number:</span> <span id="stat-kappa">195.0</span></div>
+        <div class="stat-line"><span>Zeta Potential:</span> <span id="stat-zeta">0 mV</span></div>
+        <div class="stat-line"><span>Recalcitrance (Lignin):</span> <span id="stat-recal" style="color: #ff5555;">High</span></div>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 0;">
+        <div class="stat-line"><span>Morphology:</span> <span id="stat-morph">Intact Wood Fiber</span></div>
+        <div class="stat-line"><span>Est. Aspect Ratio:</span> <span id="stat-ar">~ 10</span></div>
+    </div>
+
+    <div id="ui-panel">
+        <div class="header">
+            <h1>Nanocellulose Lab</h1>
+            <p>v4.0 - PhD Scientific Solver</p>
+        </div>
+        <div class="controls">
+            
+            <!-- STEP 1: COMPOSITION & PULPING -->
+            <div class="step">
+                <div class="step-title">1. Biomass & Pulping</div>
+                
+                <select id="sel-biomass">
+                    <option value="softwood">Softwood (High Lignin, High CrI)</option>
+                    <option value="hardwood">Hardwood (Med Lignin, Med CrI)</option>
+                    <option value="cotton">Cotton Linters (Pure Cellulose, Max CrI)</option>
+                </select>
+
+                <div class="comp-display">
+                    <div class="comp-bar">
+                        <div class="comp-segment c-cel" id="bar-cel"></div>
+                        <div class="comp-segment c-hem" id="bar-hem"></div>
+                        <div class="comp-segment c-lig" id="bar-lig"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="dot" style="background:var(--c-cel)"></div> Cellulose (<span id="pct-cel">45</span>%)</div>
+                        <div class="legend-item"><div class="dot" style="background:var(--c-hem)"></div> Hemi (<span id="pct-hem">25</span>%)</div>
+                        <div class="legend-item"><div class="dot" style="background:var(--c-lig)"></div> Lignin (<span id="pct-lig">30</span>%)</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="label"><span>Kraft Pulping (Delignification)</span> <span class="val" id="val-pulp">0%</span></div>
+                    <input type="range" id="slider-pulp" min="0" max="1" step="0.01" value="0">
+                </div>
+                <div class="row">
+                    <div class="label"><span>ECF/TCF Bleaching Sequence</span> <span class="val" id="val-bleach">0%</span></div>
+                    <input type="range" id="slider-bleach" min="0" max="1" step="0.01" value="0">
+                </div>
+            </div>
+
+            <!-- STEP 2: PRETREATMENT -->
+            <div class="step">
+                <div class="step-title">2. Nanoscale Pretreatment</div>
+                <select id="sel-pre">
+                    <option value="none">None (Mechanical Only)</option>
+                    <option value="tempo">TEMPO Oxidation (TOCNF - Carboxyls)</option>
+                    <option value="cationic">Cationization (Q-Ammonium)</option>
+                    <option value="enzyme">Enzymatic (Endoglucanase Cleavage)</option>
+                </select>
+                <div class="row">
+                    <div class="label"><span>Treatment Degree / DOS</span> <span class="val" id="val-pre-deg">0%</span></div>
+                    <input type="range" id="slider-pre-deg" min="0" max="1" step="0.01" value="0">
+                </div>
+            </div>
+
+            <!-- STEP 3: DEFIBRILLATION -->
+            <div class="step">
+                <div class="step-title">3. Mechanical Defibrillation</div>
+                <select id="sel-mech">
+                    <option value="grinder">Masuko Grinder (Shear & Entangle)</option>
+                    <option value="hph">High-Pressure Homogenizer (Impact Snap)</option>
+                    <option value="super">Supermasscolloider (Extreme Friction Web)</option>
+                </select>
+                <div class="row">
+                    <div class="label"><span>Mechanical Energy Input</span> <span class="val" id="val-energy">0%</span></div>
+                    <input type="range" id="slider-energy" min="0" max="1" step="0.01" value="0">
+                </div>
+            </div>
+
+            <!-- STEP 4: POST-TREATMENT -->
+            <div class="step" style="margin-bottom: 40px;">
+                <div class="step-title">4. Functionalization & Templating</div>
+                <select id="sel-post">
+                    <option value="none">None</option>
+                    <option value="laccase">Laccase-Mediated Lignin Polymerization</option>
+                    <option value="polymer">Polymer Matrix (PVA/PLA) Templating</option>
+                    <option value="ions">Adsorption of Charged Molecules</option>
+                </select>
+                <div class="row">
+                    <div class="label"><span>Addition / Grafting Level</span> <span class="val" id="val-post-deg">0%</span></div>
+                    <input type="range" id="slider-post-deg" min="0" max="1" step="0.01" value="0">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- 1. BIOMASS & STATE MANAGEMENT ---
+        const BIOMASS_TYPES = {
+            softwood: { cel: 45, hem: 25, lig: 30, cri: 0.65 },
+            hardwood: { cel: 48, hem: 30, lig: 22, cri: 0.60 },
+            cotton:   { cel: 95, hem: 3,  lig: 2,  cri: 0.85 }
+        };
+
+        const state = {
+            rawBiomass: 'softwood',
+            pulping: 0,
+            bleaching: 0,
+            preType: 'none',
+            preDeg: 0,
+            mechType: 'grinder',
+            energy: 0,
+            postType: 'none',
+            postDeg: 0,
+            
+            // Mass balance
+            comp: { cel: 45, hem: 25, lig: 30 },
+            relComp: { cel: 45, hem: 25, lig: 30 },
+            kappa: 195,
+            zetaPotential: 0,
+            time: 0
+        };
+
+        const PARAMS = { FIBERS: 120, SEGMENTS: 60, RADIUS: 7.0, HEIGHT: 100.0 };
+        const TOTAL = PARAMS.FIBERS * PARAMS.SEGMENTS;
+
+        const $ = id => document.getElementById(id);
+
+        function updateComposition() {
+            const raw = BIOMASS_TYPES[state.rawBiomass];
+            
+            // 1. Kraft Pulping (Removes max 95% Lignin, 50% Hemi)
+            const ligPulp = raw.lig * (1 - state.pulping * 0.95);
+            const hemPulp = raw.hem * (1 - state.pulping * 0.50);
+            
+            // 2. Bleaching Sequences (Removes 100% of remaining Lignin, 30% of remaining Hemi)
+            state.comp.lig = ligPulp * (1 - state.bleaching * 1.0);
+            state.comp.hem = hemPulp * (1 - state.bleaching * 0.3);
+            state.comp.cel = raw.cel; // Cellulose highly preserved
+
+            // 3. Normalize to 100%
+            const totalMass = state.comp.lig + state.comp.hem + state.comp.cel;
+            state.relComp.cel = (state.comp.cel / totalMass) * 100;
+            state.relComp.hem = (state.comp.hem / totalMass) * 100;
+            state.relComp.lig = (state.comp.lig / totalMass) * 100;
+
+            // Update UI Bars
+            $('bar-cel').style.width = state.relComp.cel + '%';
+            $('bar-hem').style.width = state.relComp.hem + '%';
+            $('bar-lig').style.width = state.relComp.lig + '%';
+            
+            $('pct-cel').textContent = state.relComp.cel.toFixed(1);
+            $('pct-hem').textContent = state.relComp.hem.toFixed(1);
+            $('pct-lig').textContent = state.relComp.lig.toFixed(1);
+
+            // Calculate Kappa Number (approx Lignin% * 6.5)
+            state.kappa = state.relComp.lig * 6.5;
+            $('stat-kappa').textContent = state.kappa.toFixed(1);
+
+            updateShellColors();
+        }
+
+        // --- UI BINDINGS ---
+        $('sel-biomass').addEventListener('change', e => { state.rawBiomass = e.target.value; updateComposition(); buildArchitecture(); });
+        ['sel-pre', 'sel-mech', 'sel-post'].forEach(id => {
+            $(id).addEventListener('change', e => {
+                if(id === 'sel-pre') state.preType = e.target.value;
+                if(id === 'sel-mech') state.mechType = e.target.value;
+                if(id === 'sel-post') { state.postType = e.target.value; updatePostColors(); }
+            });
+        });
+
+        const bindSlider = (id, key, valId) => {
+            $(id).addEventListener('input', e => {
+                state[key] = parseFloat(e.target.value);
+                $(valId).textContent = Math.round(state[key] * 100) + '%';
+                if(key === 'pulping' || key === 'bleaching') updateComposition();
+            });
+        };
+        bindSlider('slider-pulp', 'pulping', 'val-pulp');
+        bindSlider('slider-bleach', 'bleaching', 'val-bleach');
+        bindSlider('slider-pre-deg', 'preDeg', 'val-pre-deg');
+        bindSlider('slider-energy', 'energy', 'val-energy');
+        bindSlider('slider-post-deg', 'postDeg', 'val-post-deg');
+
+        // --- 2. THREE.JS ENGINE ---
+        let scene, camera, renderer, controls;
+        let cellMesh, shellMesh, postMesh;
+        const fibrilData = []; 
+        const isCrystal = new Uint8Array(TOTAL);
+        const dummy = new THREE.Object3D();
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x05070a, 0.003);
+
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.1, 1500);
+            camera.position.set(0, 0, 160);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            $('canvas-container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05;
+            controls.autoRotate = true; controls.autoRotateSpeed = 0.3;
+
+            // Photorealistic Studio Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+            keyLight.position.set(40, 60, 50); scene.add(keyLight);
+            
+            const fillLight = new THREE.DirectionalLight(0xaaccff, 0.8);
+            fillLight.position.set(-50, -20, -30); scene.add(fillLight);
+            
+            const rimLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+            rimLight.position.set(20, 30, -50); scene.add(rimLight);
+
+            // Base Geometry
+            const geo = new THREE.CylinderGeometry(0.18, 0.18, 1, 6);
+            geo.rotateX(Math.PI/2); geo.translate(0, 0, 0.5);
+            
+            // Pure Cellulose Material (Highly refractive/translucent when nano)
+            const matC = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff, roughness: 0.1, metalness: 0.0, transmission: 0.8,
+                thickness: 0.5, clearcoat: 1.0, clearcoatRoughness: 0.1
+            });
+            cellMesh = new THREE.InstancedMesh(geo, matC, TOTAL);
+            cellMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            scene.add(cellMesh);
+
+            // Shell Material (Lignin + Hemi)
+            const matS = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95 });
+            shellMesh = new THREE.InstancedMesh(geo, matS, TOTAL);
+            shellMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            scene.add(shellMesh);
+
+            // Post-Treatment Mesh (Particles/Polymers)
+            const geoP = new THREE.SphereGeometry(0.35, 8, 8);
+            const matP = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5 });
+            postMesh = new THREE.InstancedMesh(geoP, matP, TOTAL);
+            postMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            scene.add(postMesh);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function buildArchitecture() {
+            fibrilData.length = 0;
+            const cri = BIOMASS_TYPES[state.rawBiomass].cri;
+
+            for (let i = 0; i < PARAMS.FIBERS; i++) {
+                const isCore = i < (PARAMS.FIBERS * 0.4);
+                const r = PARAMS.RADIUS * Math.sqrt(i / PARAMS.FIBERS);
+                const baseAngle = i * (Math.PI * (3 - Math.sqrt(5)));
+                
+                fibrilData.push({ id: i, r: r, angle: baseAngle, phase: Math.random() * 10, isCore: isCore });
+            }
+
+            // Cellulose Crystallinity colors
+            const colCryst = new THREE.Color(0xffffff);
+            const colAmorph = new THREE.Color(0xaabbdd); 
+
+            let idx = 0;
+            const cycleLen = Math.floor(8 + (cri * 12)); 
+            const thresh = cycleLen * cri;
+
+            for(let i=0; i<PARAMS.FIBERS; i++) {
+                for(let j=0; j<PARAMS.SEGMENTS; j++) {
+                    const cryst = (j % cycleLen) < thresh ? 1 : 0;
+                    isCrystal[idx] = cryst;
+                    cellMesh.setColorAt(idx, cryst ? colCryst : colAmorph);
+                    idx++;
+                }
+            }
+            cellMesh.instanceColor.needsUpdate = true;
+            updateShellColors();
+        }
+
+        function updateShellColors() {
+            // Visual representation of bleaching
+            const colLig = new THREE.Color(0x4a2c16); // Dark Kraft brown
+            const colHem = new THREE.Color(0xb59c4a); // Yellowish
+            const colBleached = new THREE.Color(0xffffff); // Bright white
+
+            // Interpolate colors based on bleaching sequence
+            colLig.lerp(colBleached, state.bleaching);
+            colHem.lerp(colBleached, state.bleaching);
+
+            let idx = 0;
+            for(let i=0; i<PARAMS.FIBERS; i++) {
+                const baseCol = (i % 3 === 0) ? colLig : colHem;
+                for(let j=0; j<PARAMS.SEGMENTS; j++) {
+                    shellMesh.setColorAt(idx, baseCol);
+                    idx++;
+                }
+            }
+            shellMesh.instanceColor.needsUpdate = true;
+        }
+
+        function updatePostColors() {
+            if (state.postType === 'laccase') {
+                postMesh.material.color.setHex(0x3e2723); // Black/Brown Lignin DHP
+                postMesh.material.transparent = false;
+            } else if (state.postType === 'polymer') {
+                postMesh.material.color.setHex(0x00ffcc); // Cyan PVA/PLA Matrix
+                postMesh.material.transparent = true;
+                postMesh.material.opacity = 0.5;
+            } else if (state.postType === 'ions') {
+                postMesh.material.color.setHex(0xff00cc); // Magenta charged specs
+                postMesh.material.transparent = false;
+            }
+        }
+
+        // --- 3. KINEMATICS SOLVER ---
+        function updatePhysics() {
+            state.time += 0.015;
+            const t = state.time;
+
+            // Chemical Environment
+            let zeta = 0;
+            if (state.preType === 'tempo') zeta = -60 * state.preDeg;
+            if (state.preType === 'cationic') zeta = +50 * state.preDeg;
+            if (state.preType === 'enzyme') zeta = -10 * state.preDeg; // Native slight negative charge
+            state.zetaPotential = zeta;
+
+            // Recalcitrance Mechanics
+            // Lignin BLOCKS fibrillation. Hemicellulose actually AIDS it (prevents hornification).
+            const ligninBlock = Math.min(1.0, state.relComp.lig / 12.0); // >12% lignin = blocked
+            const hemiBoost = state.relComp.hem / 25.0; 
+            
+            let effectiveEnergy = state.energy * (1.0 - ligninBlock) * (1.0 + hemiBoost * 0.2);
+
+            // Electrostatics: Repulsion massively aids individualization
+            const chargeRepulsion = Math.abs(zeta) / 60; 
+            effectiveEnergy = Math.min(1.0, effectiveEnergy + (chargeRepulsion * state.energy * 2.5));
+            const staticSwelling = chargeRepulsion * 0.5; // Puffs out the bundle even without energy
+
+            let activeSegments = 0;
+            let idx = 0;
+
+            for (let i = 0; i < PARAMS.FIBERS; i++) {
+                const f = fibrilData[i];
+                
+                // Outer layers peel off more easily
+                const layerFactor = f.r / PARAMS.RADIUS; 
+                let peel = Math.pow(effectiveEnergy, 1.5) * layerFactor;
+
+                let radiusOffset = (staticSwelling * PARAMS.RADIUS * layerFactor) + (peel * 35.0);
+
+                for (let j = 0; j < PARAMS.SEGMENTS; j++) {
+                    const segY = (j / (PARAMS.SEGMENTS - 1)) * PARAMS.HEIGHT - (PARAMS.HEIGHT / 2);
+                    
+                    // Fray ends more than center
+                    const verticalFray = Math.abs(segY) / (PARAMS.HEIGHT / 2); 
+                    const localPeel = peel * (0.2 + 0.8 * verticalFray); 
+
+                    // Intact twist
+                    const twist = segY * 0.03 * (1 - effectiveEnergy); 
+                    const angle = f.angle + twist;
+
+                    let x = Math.cos(angle) * (f.r + radiusOffset);
+                    let z = Math.sin(angle) * (f.r + radiusOffset);
+                    let y = segY;
+
+                    // --- MECHANICAL DISRUPTION MORPHOLOGY ---
+                    if (effectiveEnergy > 0 || staticSwelling > 0) {
+                        // Fluid Drift
+                        x += Math.sin(t + f.phase) * (localPeel * 2);
+                        z += Math.cos(t * 0.8 + f.phase) * (localPeel * 2);
+
+                        if (state.mechType === 'grinder') {
+                            // Grinder: Highly entangled shearing
+                            // Note: Charge (repulsion) limits tangling (keeps fibers rigid)
+                            const tangle = localPeel * 14 * (1 - chargeRepulsion * 0.6);
+                            x += Math.sin(y * 0.15 + f.phase) * tangle;
+                            z += Math.cos(y * 0.12 + f.phase) * tangle;
+                        } 
+                        else if (state.mechType === 'hph') {
+                            // HPH: Straighter lines, high velocity flutter
+                            x += Math.sin(y * 0.05 + f.phase) * localPeel * 3;
+                        }
+                        else if (state.mechType === 'super') {
+                            // Supermasscolloider: Extreme 3D branched networking
+                            const chaos = localPeel * 22 * (1 - chargeRepulsion * 0.4);
+                            x += Math.sin(y * 0.4 + f.phase) * chaos;
+                            z += Math.cos(y * 0.35 + f.phase) * chaos;
+                            y += Math.sin(x * 0.2) * chaos * 0.5; // Z-distortion
+                        }
+                    }
+
+                    // --- ENZYMATIC DIGESTION & HPH SNAPPING ---
+                    let scaleZ = PARAMS.HEIGHT / PARAMS.SEGMENTS; 
+                    let scaleX = 1.0;
+                    let broken = false;
+                    const cryst = isCrystal[idx];
+
+                    if (state.preType === 'enzyme' && !cryst) {
+                        const digest = 1.0 - (state.preDeg * 1.5);
+                        scaleX *= Math.max(0, digest);
+                        scaleZ *= Math.max(0, digest);
+                        if(digest < 0.1) broken = true;
+                    }
+
+                    if (state.mechType === 'hph' && effectiveEnergy > 0 && !cryst) {
+                        // Snapping based on energy. Hemi preserves chain integrity slightly.
+                        const breakProb = effectiveEnergy * 0.8 * (1 - state.relComp.hem / 100);
+                        const hash = (f.id * 7 + j * 13) % 100 / 100;
+                        if (hash < breakProb) broken = true;
+                    }
+
+                    if (broken) {
+                        scaleZ *= 0.1; // Visual gap
+                    } else {
+                        activeSegments++;
+                    }
+
+                    // Fibrils get thinner as they delaminate
+                    scaleX *= Math.max(0.12, 1.0 - (localPeel * 0.7));
+
+                    // --- POSITION UPDATES ---
+                    dummy.position.set(x, y, z);
+                    
+                    if (j < PARAMS.SEGMENTS - 1 && !broken) {
+                        const nY = ((j+1) / (PARAMS.SEGMENTS - 1)) * PARAMS.HEIGHT - (PARAMS.HEIGHT / 2);
+                        const nA = f.angle + (nY * 0.03 * (1-effectiveEnergy));
+                        dummy.lookAt(Math.cos(nA)*(f.r + radiusOffset), nY, Math.sin(nA)*(f.r + radiusOffset));
+                    } else {
+                        dummy.rotation.set(Math.PI/2, 0, 0);
+                    }
+
+                    dummy.scale.set(scaleX, scaleX, scaleZ * 1.15); // Slight overlap
+                    dummy.updateMatrix();
+                    cellMesh.setMatrixAt(idx, dummy.matrix);
+
+                    // --- MATRIX (Lignin/Hemi) RENDERING ---
+                    const matrixRemaining = (state.relComp.lig + state.relComp.hem) / 55.0; // Max ~55% in raw wood
+                    
+                    if (matrixRemaining > 0.02 && !broken && localPeel < 0.2) {
+                        // Matrix clings to the core
+                        dummy.scale.set(scaleX * (1.0 + matrixRemaining*0.8), scaleX * (1.0 + matrixRemaining*0.8), scaleZ * 1.2);
+                        dummy.updateMatrix();
+                        shellMesh.setMatrixAt(idx, dummy.matrix);
+                    } else {
+                        dummy.scale.set(0,0,0); dummy.updateMatrix();
+                        shellMesh.setMatrixAt(idx, dummy.matrix);
+                    }
+
+                    // --- POST-FUNCTIONALIZATION RENDERING ---
+                    if (state.postType !== 'none' && state.postDeg > 0 && !broken) {
+                        // Seeded random distribution on surface
+                        const hashP = (f.id * 19 + j * 23) % 100 / 100;
+                        if (hashP < state.postDeg) {
+                            dummy.position.set(x, y, z);
+                            const s = state.postType === 'polymer' ? scaleX * 3.0 : scaleX * 1.5;
+                            dummy.scale.set(s,s,s);
+                            dummy.updateMatrix();
+                            postMesh.setMatrixAt(idx, dummy.matrix);
+                        } else {
+                            dummy.scale.set(0,0,0); dummy.updateMatrix();
+                            postMesh.setMatrixAt(idx, dummy.matrix);
+                        }
+                    } else {
+                        dummy.scale.set(0,0,0); dummy.updateMatrix();
+                        postMesh.setMatrixAt(idx, dummy.matrix);
+                    }
+
+                    idx++;
+                }
+            }
+
+            cellMesh.instanceMatrix.needsUpdate = true;
+            shellMesh.instanceMatrix.needsUpdate = true;
+            postMesh.instanceMatrix.needsUpdate = true;
+
+            // --- ANALYTICS UPDATE ---
+            const isBlocked = state.relComp.lig > 12;
+            const recalColor = isBlocked ? '#ff5555' : (state.relComp.lig > 2 ? '#ffaa00' : '#00ffcc');
+            const recalText = isBlocked ? 'High (Requires Pulping)' : (state.relComp.lig > 2 ? 'Low (Trace Lignin)' : 'None (Ready)');
+            $('stat-recal').textContent = recalText;
+            $('stat-recal').style.color = recalColor;
+
+            $('stat-zeta').textContent = Math.round(zeta) + ' mV';
+
+            let morph = "Intact Biomass Bundle";
+            let ar = "~ 10";
+
+            if (isBlocked && state.energy > 0) {
+                morph = "Failed Defibrillation (Recalcitrance Block)";
+            } else if (effectiveEnergy > 0.8 && state.preType === 'tempo') {
+                morph = "TOCNF (Individualized Nanorods)"; ar = "> 300";
+            } else if (effectiveEnergy > 0.5 && state.preType === 'enzyme') {
+                morph = "Cellulose Nanocrystals (CNC)"; ar = "15 - 30";
+            } else if (effectiveEnergy > 0.6) {
+                morph = state.mechType === 'grinder' ? "CNF (Entangled Gel Network)" : 
+                       (state.mechType === 'super' ? "Highly Branched Web" : "Microfibrillated Cellulose (MFC)");
+                ar = "50 - 150";
+            } else if (effectiveEnergy > 0.1 || staticSwelling > 0.1) {
+                morph = "Partially Delaminated Fiber"; ar = "~ 20";
+            } else if (state.relComp.lig < 2) {
+                morph = "Bleached Cellulose Pulp";
+            }
+
+            // Post fix morphology text
+            if(state.postType === 'laccase' && state.postDeg > 0.1) morph = "DHP Lignin-Grafted " + morph;
+            if(state.postType === 'polymer' && state.postDeg > 0.1) morph = "PVA/PLA " + morph + " Nanocomposite";
+            if(state.postType === 'ions' && state.postDeg > 0.1) morph = "Ionically Modified " + morph;
+
+            $('stat-morph').textContent = morph;
+            $('stat-ar').textContent = ar;
+        }
+
+        function loop() {
+            requestAnimationFrame(loop);
+            updatePhysics();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- 4. INIT ---
+        window.onload = () => {
+            initScene();
+            updateComposition();
+            buildArchitecture();
+            
+            setTimeout(() => {
+                $('loader').style.opacity = '0';
+                setTimeout(() => $('loader').remove(), 500);
+            }, 800);
+            
+            loop();
+        };
+    </script>
+</body>
+</html>
