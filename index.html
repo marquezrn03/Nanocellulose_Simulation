@@ -229,7 +229,7 @@
         const BIOMASS_TYPES = {
             softwood: { cel: 45, hem: 25, lig: 30, cri: 0.65 },
             hardwood: { cel: 48, hem: 30, lig: 22, cri: 0.60 },
-            cotton:   { cel: 95, hem: 3,  lig: 2,  cri: 0.85 }
+            cotton:   { cel: 98, hem: 1.5, lig: 0.5, cri: 0.85 }
         };
 
         const state = {
@@ -486,49 +486,48 @@
 
                 let radiusOffset = (staticSwelling * PARAMS.RADIUS * layerFactor) + (peel * 35.0);
 
-                for (let j = 0; j < PARAMS.SEGMENTS; j++) {
-                    const segY = (j / (PARAMS.SEGMENTS - 1)) * PARAMS.HEIGHT - (PARAMS.HEIGHT / 2);
+                // Exact 3D coordinate solver for perfect continuity & high aspect ratio
+                const getPos = (segIndex) => {
+                    const sY = (segIndex / (PARAMS.SEGMENTS - 1)) * PARAMS.HEIGHT - (PARAMS.HEIGHT / 2);
+                    const vFray = Math.abs(sY) / (PARAMS.HEIGHT / 2);
+                    const lPeel = peel * (0.2 + 0.8 * vFray);
                     
-                    // Fray ends more than center
-                    const verticalFray = Math.abs(segY) / (PARAMS.HEIGHT / 2); 
-                    const localPeel = peel * (0.2 + 0.8 * verticalFray); 
-
-                    // Intact twist
-                    const twist = segY * 0.03 * (1 - effectiveEnergy); 
+                    const twist = sY * 0.03 * (1 - effectiveEnergy);
                     const angle = f.angle + twist;
-
-                    let x = Math.cos(angle) * (f.r + radiusOffset);
-                    let z = Math.sin(angle) * (f.r + radiusOffset);
-                    let y = segY;
-
-                    // --- MECHANICAL DISRUPTION MORPHOLOGY ---
+                    
+                    let pX = Math.cos(angle) * (f.r + radiusOffset);
+                    let pZ = Math.sin(angle) * (f.r + radiusOffset);
+                    let pY = sY;
+                    
                     if (effectiveEnergy > 0 || staticSwelling > 0) {
-                        // Fluid Drift
-                        x += Math.sin(t + f.phase) * (localPeel * 2);
-                        z += Math.cos(t * 0.8 + f.phase) * (localPeel * 2);
+                        pX += Math.sin(t + f.phase) * (lPeel * 2);
+                        pZ += Math.cos(t * 0.8 + f.phase) * (lPeel * 2);
 
                         if (state.mechType === 'grinder') {
-                            // Grinder: Highly entangled shearing
-                            // Note: Charge (repulsion) limits tangling (keeps fibers rigid)
-                            const tangle = localPeel * 14 * (1 - chargeRepulsion * 0.6);
-                            x += Math.sin(y * 0.15 + f.phase) * tangle;
-                            z += Math.cos(y * 0.12 + f.phase) * tangle;
+                            const tangle = lPeel * 14 * (1 - chargeRepulsion * 0.6);
+                            pX += Math.sin(pY * 0.15 + f.phase) * tangle;
+                            pZ += Math.cos(pY * 0.12 + f.phase) * tangle;
                         } 
                         else if (state.mechType === 'hph') {
-                            // HPH: Straighter lines, high velocity flutter
-                            x += Math.sin(y * 0.05 + f.phase) * localPeel * 3;
+                            pX += Math.sin(pY * 0.05 + f.phase) * lPeel * 3;
                         }
                         else if (state.mechType === 'super') {
-                            // Supermasscolloider: Extreme 3D branched networking
-                            const chaos = localPeel * 22 * (1 - chargeRepulsion * 0.4);
-                            x += Math.sin(y * 0.4 + f.phase) * chaos;
-                            z += Math.cos(y * 0.35 + f.phase) * chaos;
-                            y += Math.sin(x * 0.2) * chaos * 0.5; // Z-distortion
+                            const chaos = lPeel * 22 * (1 - chargeRepulsion * 0.4);
+                            pX += Math.sin(pY * 0.4 + f.phase) * chaos;
+                            pZ += Math.cos(pY * 0.35 + f.phase) * chaos;
+                            pY += Math.sin(pX * 0.2) * chaos * 0.5;
                         }
                     }
+                    return { x: pX, y: pY, z: pZ, lPeel: lPeel };
+                };
+
+                for (let j = 0; j < PARAMS.SEGMENTS; j++) {
+                    const pos1 = getPos(j);
+                    let x = pos1.x, y = pos1.y, z = pos1.z;
+                    const localPeel = pos1.lPeel;
 
                     // --- ENZYMATIC DIGESTION & HPH SNAPPING ---
-                    let scaleZ = PARAMS.HEIGHT / PARAMS.SEGMENTS; 
+                    let zMult = 1.0; 
                     let scaleX = 1.0;
                     let broken = false;
                     const cryst = isCrystal[idx];
@@ -536,7 +535,7 @@
                     if (state.preType === 'enzyme' && !cryst) {
                         const digest = 1.0 - (state.preDeg * 1.5);
                         scaleX *= Math.max(0, digest);
-                        scaleZ *= Math.max(0, digest);
+                        zMult *= Math.max(0, digest);
                         if(digest < 0.1) broken = true;
                     }
 
@@ -547,8 +546,15 @@
                         if (hash < breakProb) broken = true;
                     }
 
+                    if (state.mechType === 'super' && effectiveEnergy > 0) {
+                        // Extreme friction tears the fibrils into smaller branched fragments
+                        const breakProb = effectiveEnergy * 0.6;
+                        const hash = (f.id * 11 + j * 17) % 100 / 100;
+                        if (hash < breakProb) broken = true;
+                    }
+
                     if (broken) {
-                        scaleZ *= 0.1; // Visual gap
+                        zMult = 0.1; // Visual gap
                     } else {
                         activeSegments++;
                     }
@@ -559,24 +565,30 @@
                     // --- POSITION UPDATES ---
                     dummy.position.set(x, y, z);
                     
+                    let dist = PARAMS.HEIGHT / PARAMS.SEGMENTS; // Base length
+
                     if (j < PARAMS.SEGMENTS - 1 && !broken) {
-                        const nY = ((j+1) / (PARAMS.SEGMENTS - 1)) * PARAMS.HEIGHT - (PARAMS.HEIGHT / 2);
-                        const nA = f.angle + (nY * 0.03 * (1-effectiveEnergy));
-                        dummy.lookAt(Math.cos(nA)*(f.r + radiusOffset), nY, Math.sin(nA)*(f.r + radiusOffset));
+                        const pos2 = getPos(j+1);
+                        dummy.lookAt(pos2.x, pos2.y, pos2.z);
+                        // Calculate exact distance to next segment to ensure continuous unbroken strings
+                        const dx = pos2.x - x;
+                        const dy = pos2.y - y;
+                        const dz = pos2.z - z;
+                        dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
                     } else {
                         dummy.rotation.set(Math.PI/2, 0, 0);
                     }
 
-                    dummy.scale.set(scaleX, scaleX, scaleZ * 1.15); // Slight overlap
+                    dummy.scale.set(scaleX, scaleX, dist * zMult * 1.05); // Slight overlap seals joints
                     dummy.updateMatrix();
                     cellMesh.setMatrixAt(idx, dummy.matrix);
 
                     // --- MATRIX (Lignin/Hemi) RENDERING ---
                     const matrixRemaining = (state.relComp.lig + state.relComp.hem) / 55.0; // Max ~55% in raw wood
                     
-                    if (matrixRemaining > 0.02 && !broken && localPeel < 0.2) {
+                    if (matrixRemaining > 0.05 && !broken && localPeel < 0.2) {
                         // Matrix clings to the core
-                        dummy.scale.set(scaleX * (1.0 + matrixRemaining*0.8), scaleX * (1.0 + matrixRemaining*0.8), scaleZ * 1.2);
+                        dummy.scale.set(scaleX * (1.0 + matrixRemaining*0.8), scaleX * (1.0 + matrixRemaining*0.8), dist * zMult * 1.2);
                         dummy.updateMatrix();
                         shellMesh.setMatrixAt(idx, dummy.matrix);
                     } else {
@@ -631,8 +643,8 @@
                 morph = "Cellulose Nanocrystals (CNC)"; ar = "15 - 30";
             } else if (effectiveEnergy > 0.6) {
                 morph = state.mechType === 'grinder' ? "CNF (Entangled Gel Network)" : 
-                       (state.mechType === 'super' ? "Highly Branched Web" : "Microfibrillated Cellulose (MFC)");
-                ar = "50 - 150";
+                       (state.mechType === 'super' ? "Highly Branched Web Fragments" : "Microfibrillated Cellulose (MFC)");
+                ar = state.mechType === 'super' ? "15 - 40" : "50 - 150";
             } else if (effectiveEnergy > 0.1 || staticSwelling > 0.1) {
                 morph = "Partially Delaminated Fiber"; ar = "~ 20";
             } else if (state.relComp.lig < 2) {
