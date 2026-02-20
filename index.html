@@ -608,11 +608,15 @@
             let baseYM = 3.5; // GPa
             let baseStrain = 2.0; // %
             let app = "Standard paper products, cardboard, packaging. Low nanoscale functionality.";
+            
+            // Use local variables to prevent infinite string concatenation in the render loop
+            let currentMorph = "Intact Wood Fiber";
+            let currentAspect = 10;
 
             if (isBlocked && state.energy > 0) {
-                state.morphology = "Failed Defibrillation (Recalcitrance)"; state.aspect = 10;
+                currentMorph = "Failed Defibrillation (Recalcitrance)"; currentAspect = 10;
             } else if (effectiveEnergy > 0.8 && state.preType === 'tempo') {
-                state.morphology = "TOCNF (Individualized Nanorods)"; state.aspect = 450;
+                currentMorph = "TOCNF (Individualized Nanorods)"; currentAspect = 450;
                 baseTS = 250; baseYM = 16.0; baseStrain = 4.0;
                 app = "High-barrier oxygen packaging, transparent flexible electronics, high-end rheology modifiers.";
             } else if (effectiveEnergy > 0.4 && state.preType === 'enzyme' && state.preDeg >= 0.08) {
@@ -620,31 +624,31 @@
                 const chopDegree = Math.min(1.0, (state.preDeg - 0.08) * 2.5);
                 
                 if (chopDegree > 0.8) {
-                    state.morphology = "Cellulose Nanocrystals (CNC)";
+                    currentMorph = "Cellulose Nanocrystals (CNC)";
                     app = "Iridescent photonic films, strengthening additive for nanocomposites, emulsion stabilizers.";
                 } else {
-                    state.morphology = "CNF / CNC Mixture (Hydrolyzed)";
+                    currentMorph = "CNF / CNC Mixture (Hydrolyzed)";
                     app = "Rheology modifiers, hybrid structural films, hydrogel networks.";
                 }
                 
-                state.aspect = Math.round(120 - (95 * chopDegree)); // Smooth transition from 120 down to 25
+                currentAspect = Math.round(120 - (95 * chopDegree)); // Smooth transition from 120 down to 25
                 baseTS = 180 - (90 * chopDegree); // Strength decreases as fibers shorten
                 baseYM = 12.0 + (8.0 * chopDegree); // Stiffness increases as it becomes purely crystalline
                 baseStrain = 6.0 - (5.0 * chopDegree); // Becomes more brittle
             } else if (effectiveEnergy > 0.6 || (state.preType === 'enzyme' && state.preDeg < 0.08 && effectiveEnergy > 0.2)) {
                 // Low Enzyme Dose (< 4 FPU) explicitly promotes long, flexible CNF at much lower energy inputs
                 if(state.mechType === 'grinder' || (state.preType === 'enzyme' && state.preDeg < 0.08)) { 
-                    state.morphology = state.preType === 'enzyme' ? "Enzymatic CNF (Flexible)" : "CNF (Entangled Gel Network)"; 
-                    state.aspect = 120; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; 
+                    currentMorph = state.preType === 'enzyme' ? "Enzymatic CNF (Flexible)" : "CNF (Entangled Gel Network)"; 
+                    currentAspect = 120; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; 
                     app = "Strong nanopaper, hydrogels for tissue engineering, thickeners."; 
                 }
-                else if(state.mechType === 'super') { state.morphology = "Highly Branched CNF Web"; state.aspect = 35; baseTS = 130; baseYM = 8.0; baseStrain = 8.0; app = "Absorbent materials, aerogel precursors, filtration membranes."; }
-                else { state.morphology = "Microfibrillated Cellulose (MFC)"; state.aspect = 60; baseTS = 110; baseYM = 9.0; baseStrain = 4.0; app = "Paper coating, cement additives, low-cost bio-fillers."; }
+                else if(state.mechType === 'super') { currentMorph = "Highly Branched CNF Web"; currentAspect = 35; baseTS = 130; baseYM = 8.0; baseStrain = 8.0; app = "Absorbent materials, aerogel precursors, filtration membranes."; }
+                else { currentMorph = "Microfibrillated Cellulose (MFC)"; currentAspect = 60; baseTS = 110; baseYM = 9.0; baseStrain = 4.0; app = "Paper coating, cement additives, low-cost bio-fillers."; }
             } else if (effectiveEnergy > 0.1 || staticSwelling > 0.1) {
-                state.morphology = "Partially Delaminated Fiber"; state.aspect = 20;
+                currentMorph = "Partially Delaminated Fiber"; currentAspect = 20;
                 baseTS = 70; baseYM = 5.0;
             } else if (state.relComp.lig < 2) {
-                state.morphology = "Bleached Cellulose Pulp"; state.aspect = 10;
+                currentMorph = "Bleached Cellulose Pulp"; currentAspect = 10;
             }
 
             // Lignin Penalty/Bonus
@@ -656,14 +660,14 @@
 
             // Post-treatment modifications
             if(state.postType === 'laccase' && state.postDeg > 0.1) {
-                state.morphology = "DHP Lignin-Grafted " + state.morphology;
+                currentMorph = "DHP Lignin-Grafted " + currentMorph;
                 baseTS += 15 * state.postDeg; // Lignin acts as a stiff binder
                 baseYM += 4.5 * state.postDeg; // Increases stiffness/modulus
                 baseStrain *= (1 - 0.4 * state.postDeg); // Makes the film more brittle
                 app = "Antimicrobial active packaging, antioxidant food wraps, hydrophobic structural composites.";
             }
             if(state.postType === 'polymer' && state.postDeg > 0.1) {
-                state.morphology = "PVA/PLA " + state.morphology + " Nanocomposite";
+                currentMorph = "PVA/PLA " + currentMorph + " Nanocomposite";
                 // Polymer matrix softens the stiff cellulose network, increasing ductility drastically but lowering ultimate strength
                 baseTS = baseTS * (1 - state.postDeg * 0.7) + 45 * state.postDeg; // Drags down to ~45 MPa bulk polymer strength
                 baseYM = baseYM * (1 - state.postDeg * 0.8) + 2.5 * state.postDeg; // Drags down to bulk polymer modulus
@@ -671,13 +675,17 @@
                 app = "Fully biodegradable thermoformable plastics, 3D printing filaments, flexible packaging.";
             }
             if(state.postType === 'ions' && state.postDeg > 0.1) {
-                state.morphology = "Ionically Modified " + state.morphology;
+                currentMorph = "Ionically Modified " + currentMorph;
                 // Cationic polymers create strong electrostatic crosslinks between anionic fibrils
                 baseTS += 40 * state.postDeg; 
                 baseYM += 2.0 * state.postDeg;
                 baseStrain *= (1 - 0.2 * state.postDeg);
                 app = "High-wet-strength papers, heavy metal adsorption membranes, advanced functional coatings.";
             }
+
+            // Write back to state once per frame
+            state.morphology = currentMorph;
+            state.aspect = currentAspect;
 
             $('stat-morph').textContent = state.morphology;
             $('stat-ar').textContent = "~ " + state.aspect;
