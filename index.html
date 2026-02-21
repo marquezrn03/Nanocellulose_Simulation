@@ -698,7 +698,7 @@
             if (isBlocked && state.energy > 0) {
                 currentMorph = "Failed Defibrillation (Recalcitrance)"; currentAspect = 10;
             } else if (effectiveEnergy > 0.8 && state.preType === 'tempo') {
-                currentMorph = "TOCNF (Individualized Nanorods)"; currentAspect = 450;
+                currentMorph = "TOCNF fibers"; currentAspect = 450;
                 baseTS = 250; baseYM = 16.0; baseStrain = 4.0;
                 app = "High-barrier oxygen packaging, transparent flexible electronics, high-end rheology modifiers.";
             } else if (effectiveEnergy > 0.4 && state.preType === 'enzyme' && state.preDeg >= 0.08) {
@@ -707,7 +707,7 @@
                     currentMorph = "Cellulose Nanocrystals (CNC)";
                     app = "Iridescent photonic films, strengthening additive for nanocomposites, emulsion stabilizers.";
                 } else {
-                    currentMorph = "CNF / CNC Mixture (Hydrolyzed)";
+                    currentMorph = "CNF (Hydrolyzed)";
                     app = "Rheology modifiers, hybrid structural films, hydrogel networks.";
                 }
                 currentAspect = Math.round(120 - (95 * chopDegree)); 
