@@ -14,7 +14,6 @@
             --text-muted: #8b9bb4;
             --border: rgba(255, 255, 255, 0.15);
             
-            /* Composition Colors */
             --c-cel: #e2e8f0;
             --c-hem: #d4b85c;
             --c-lig: #8b5a2b;
@@ -26,10 +25,8 @@
             color: var(--text-main); user-select: none;
         }
 
-        /* 3D Canvas captures model rotation/zoom, blocks page scroll */
         #canvas-container { position: absolute; inset: 0; z-index: 1; touch-action: none; }
 
-        /* Sidebar UI */
         #ui-panel {
             position: absolute; top: 0; left: 0; width: 400px; height: 100vh;
             background: var(--panel); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -46,7 +43,6 @@
 
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); } 70% { box-shadow: 0 0 0 6px rgba(0,229,255,0); } 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0); } }
 
-        /* Controls Area allows native scrolling on touch devices */
         .controls { flex: 1; overflow-y: auto; padding: 24px; touch-action: pan-y; }
         .controls::-webkit-scrollbar { width: 6px; }
         .controls::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
@@ -69,7 +65,6 @@
         .label-title { font-weight: 600; color: #ccc; }
         .val { color: var(--primary); font-family: monospace; font-weight: bold; font-size: 0.8rem; text-align: right;}
 
-        /* Composition Bar */
         .comp-display { margin-bottom: 20px; }
         .comp-bar {
             display: flex; height: 16px; border-radius: 8px; overflow: hidden;
@@ -100,7 +95,6 @@
         }
         input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
 
-        /* Analytics Overlay */
         #analytics {
             position: absolute; top: 24px; right: 24px; width: 340px;
             background: var(--panel); border: 1px solid var(--border);
@@ -138,16 +132,13 @@
         .spinner { width: 50px; height: 50px; border: 2px solid rgba(0,229,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Tablet Layout */
+        /* ================= RESPONSIVE DESIGN ================= */
         @media (max-width: 1024px) {
             #ui-panel { width: 340px; }
             #analytics { width: 300px; top: env(safe-area-inset-top, 16px); right: env(safe-area-inset-right, 16px); }
-            .header { padding: 16px 20px; }
-            .controls { padding: 20px; }
-            .stat-line { font-size: 0.75rem; }
+            .header { padding: 16px 20px; } .controls { padding: 20px; } .stat-line { font-size: 0.75rem; }
         }
 
-        /* Mobile Landscape */
         @media (max-width: 950px) and (orientation: landscape) {
             #ui-panel {
                 width: 280px; height: 100vh; height: 100dvh; top: 0; bottom: auto;
@@ -158,17 +149,14 @@
                 top: env(safe-area-inset-top, 10px); right: env(safe-area-inset-right, 10px); 
                 left: auto; width: 260px; max-height: 90dvh;
                 background: rgba(10, 14, 20, 0.4); pointer-events: none;
+                backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             }
-            .stat-section { padding: 10px; }
-            .stat-line { font-size: 0.7rem; margin-bottom: 4px; }
-            .app-box { font-size: 0.65rem; padding: 6px; margin-top: 6px; }
-            .controls { padding: 12px; }
-            .step { padding: 12px; margin-bottom: 12px; }
-            .step-title { font-size: 0.7rem; margin-bottom: 8px; }
+            .stat-section { padding: 10px; } .stat-line { font-size: 0.7rem; margin-bottom: 4px; }
+            .app-box { font-size: 0.65rem; padding: 6px; margin-top: 6px; } .controls { padding: 12px; }
+            .step { padding: 12px; margin-bottom: 12px; } .step-title { font-size: 0.7rem; margin-bottom: 8px; }
             input[type=range]::-webkit-slider-thumb { height: 24px; width: 24px; margin-top: -9px; }
         }
 
-        /* Mobile Portrait */
         @media (max-width: 768px) and (orientation: portrait) {
             #ui-panel {
                 width: 100%; height: 50vh; height: 50dvh; top: auto; bottom: 0;
@@ -176,33 +164,25 @@
                 border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
                 padding-bottom: env(safe-area-inset-bottom, 0);
             }
-            .header { padding: 12px 20px; border-radius: 20px 20px 0 0; }
-            .header h1 { font-size: 1.0rem; }
+            .header { padding: 12px 20px; border-radius: 20px 20px 0 0; } .header h1 { font-size: 1.0rem; }
             
             #analytics {
                 top: env(safe-area-inset-top, 10px); left: env(safe-area-inset-left, 10px); right: env(safe-area-inset-right, 10px); 
                 width: auto; background: rgba(10, 14, 20, 0.4); pointer-events: none; 
                 max-height: 48dvh; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+                backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             }
             
-            .stat-section { padding: 8px 12px; }
-            .stat-header { font-size: 0.6rem; margin-bottom: 6px; }
-            .stat-line { font-size: 0.65rem; margin-bottom: 4px; }
-            .stat-line span:last-child { font-size: 0.75rem; }
-            .app-box { font-size: 0.6rem; padding: 6px; margin-top: 6px; }
-            #warning-box { padding: 6px; font-size: 0.6rem; margin-top: 6px; }
-
+            .stat-section { padding: 8px 12px; } .stat-header { font-size: 0.6rem; margin-bottom: 6px; }
+            .stat-line { font-size: 0.65rem; margin-bottom: 4px; } .stat-line span:last-child { font-size: 0.75rem; }
+            .app-box { font-size: 0.6rem; padding: 6px; margin-top: 6px; } #warning-box { padding: 6px; font-size: 0.6rem; margin-top: 6px; }
             input[type=range]::-webkit-slider-thumb { height: 24px; width: 24px; margin-top: -9px; }
         }
 
-        /* Small Mobile Adjustments */
         @media (max-width: 480px) and (orientation: portrait) {
-            #ui-panel { height: 55vh; height: 55dvh; }
-            .controls { padding: 12px; }
-            .step { padding: 12px; margin-bottom: 12px; }
-            .step-title { font-size: 0.7rem; margin-bottom: 10px; }
-            .label { font-size: 0.65rem; flex-direction: column; align-items: flex-start; gap: 4px; }
-            .val { align-self: flex-start; }
+            #ui-panel { height: 55vh; height: 55dvh; } .controls { padding: 12px; }
+            .step { padding: 12px; margin-bottom: 12px; } .step-title { font-size: 0.7rem; margin-bottom: 10px; }
+            .label { font-size: 0.65rem; flex-direction: column; align-items: flex-start; gap: 4px; } .val { align-self: flex-start; }
             select { padding: 8px 10px; font-size: 0.8rem; }
         }
     </style>
@@ -215,10 +195,11 @@
     <div id="analytics">
         <div class="stat-section">
             <div class="stat-header">Suspension Analytics</div>
+            <div class="stat-line"><span class="stat-label">Morphology:</span> <span id="stat-morph" style="color: #fff;">Native Wood Fiber</span></div>
             <div class="stat-line"><span class="stat-label">Kappa Number (Lignin):</span> <span id="stat-kappa">195.0</span></div>
+            <div class="stat-line"><span class="stat-label">Deg. Polymerization (DP):</span> <span id="stat-dp">10000</span></div>
             <div class="stat-line"><span class="stat-label">Zeta Potential:</span> <span id="stat-zeta">0 mV</span></div>
-            <div class="stat-line"><span class="stat-label">Morphology:</span> <span id="stat-morph" style="color: #fff;">Intact Wood Fiber</span></div>
-            <div class="stat-line"><span class="stat-label">Est. Aspect Ratio (L/d):</span> <span id="stat-ar">~ 10</span></div>
+            <div class="stat-line"><span class="stat-label">Est. Aspect Ratio (L/d):</span> <span id="stat-ar">~ 80</span></div>
         </div>
         <div class="stat-section">
             <div class="stat-header">Predicted Film Properties</div>
@@ -228,11 +209,11 @@
             
             <div class="app-box">
                 <span class="app-title">Primary Industrial Application</span>
-                <span id="stat-app">Standard paper products, cardboard, packaging. Low nanoscale functionality.</span>
+                <span id="stat-app">Standard timber/wood processing, low-grade paper products.</span>
             </div>
 
             <div id="warning-box">
-                ⚠️ <strong>RISK OF ENZYMATIC HYDROLYSIS</strong><br>High enzyme dosages significantly increase the risk of severe cellulose depolymerization and structural degradation.
+                ⚠️ <strong>RISK OF ENZYMATIC HYDROLYSIS</strong><br>High enzyme dosages significantly increase the risk of severe cellulose depolymerization and chain scission to the Leveling-Off DP (LODP).
             </div>
         </div>
     </div>
@@ -246,12 +227,12 @@
         <div class="controls">
             
             <div class="step">
-                <div class="step-title">1. Biomass & Chemistry</div>
+                <div class="step-title">1. Biomass Pulping & Bleaching</div>
                 
                 <select id="sel-biomass">
-                    <option value="softwood">Softwood (High Lignin, High CrI)</option>
-                    <option value="hardwood">Hardwood (Med Lignin, Med CrI)</option>
-                    <option value="cotton">Cotton Linters (Pure Cellulose)</option>
+                    <option value="softwood">Softwood (High Lignin, High DP)</option>
+                    <option value="hardwood">Hardwood (Med Lignin, Med DP)</option>
+                    <option value="cotton">Cotton Linters (Pure Cellulose, Max DP)</option>
                 </select>
 
                 <div class="comp-display">
@@ -292,7 +273,18 @@
             </div>
 
             <div class="step">
-                <div class="step-title">2. Nanoscale Pretreatment</div>
+                <div class="step-title">2. Micro-Scale Refining</div>
+                <div class="row">
+                    <div class="label">
+                        <span class="label-title">Pulp Refining (Disc Refiner)</span>
+                        <span class="val" id="val-refining">15 °SR</span>
+                    </div>
+                    <input type="range" id="slider-refining" min="0" max="1" step="0.01" value="0">
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-title">3. Nanoscale Pretreatment</div>
                 <select id="sel-pre">
                     <option value="none">None (Mechanical Only)</option>
                     <option value="tempo">TEMPO Oxidation (NaOCl)</option>
@@ -309,11 +301,11 @@
             </div>
 
             <div class="step">
-                <div class="step-title">3. Mechanical Processing</div>
+                <div class="step-title">4. Mechanical Defibrillation</div>
                 <select id="sel-mech">
-                    <option value="grinder">Masuko Grinder</option>
-                    <option value="hph">High-Pressure Homogenizer</option>
-                    <option value="super">Supermasscolloider</option>
+                    <option value="grinder">Masuko Grinder (Friction/Shear)</option>
+                    <option value="hph">High-Pressure Homogenizer (Impact)</option>
+                    <option value="acc">Aqueous Counter Collision (ACC jets)</option>
                 </select>
                 <div class="row">
                     <div class="label">
@@ -325,7 +317,7 @@
             </div>
 
             <div class="step" style="margin-bottom: 20px;">
-                <div class="step-title">4. Functionalization</div>
+                <div class="step-title">5. Functionalization</div>
                 <select id="sel-post">
                     <option value="none">None (Pure Nanocellulose)</option>
                     <option value="laccase">Laccase Lignin Polymerization</option>
@@ -349,26 +341,22 @@
 
     <script>
         const BIOMASS_TYPES = {
-            softwood: { cel: 45, hem: 25, lig: 30, cri: 0.65 },
-            hardwood: { cel: 48, hem: 30, lig: 22, cri: 0.60 },
-            cotton:   { cel: 98, hem: 1.5, lig: 0.5, cri: 0.85 }
+            softwood: { cel: 45, hem: 25, lig: 30, cri: 0.65, dp: 10000 },
+            hardwood: { cel: 48, hem: 30, lig: 22, cri: 0.60, dp: 9000 },
+            cotton:   { cel: 98, hem: 1.5, lig: 0.5, cri: 0.85, dp: 14000 }
         };
 
         const state = {
             rawBiomass: 'softwood', pulping: 0, bleaching: 0, bleachType: 'ecf',
-            preType: 'none', preDeg: 0, mechType: 'grinder', energy: 0,
+            refining: 0, preType: 'none', preDeg: 0, mechType: 'grinder', energy: 0,
             postType: 'none', postDeg: 0,
             comp: { cel: 45, hem: 25, lig: 30 }, relComp: { cel: 45, hem: 25, lig: 30 },
-            kappa: 195, zetaPotential: 0, time: 0,
-            morphology: '', aspect: 10
+            kappa: 195, zetaPotential: 0, time: 0, dp: 10000,
+            morphology: '', aspect: 80
         };
 
         const PARAMS = { 
-            FIBERS: 160,       // High density
-            BUNDLES: 8,        // Hierarchical microfibrillar bands
-            SEGMENTS: 50, 
-            RADIUS: 7.5, 
-            HEIGHT: 110.0 
+            FIBERS: 160, BUNDLES: 8, SEGMENTS: 50, RADIUS: 7.5, HEIGHT: 110.0 
         };
         const TOTAL = PARAMS.FIBERS * PARAMS.SEGMENTS;
         const $ = id => document.getElementById(id);
@@ -381,8 +369,8 @@
         }
 
         function formatEnergy() {
-            if(state.mechType === 'grinder' || state.mechType === 'super') {
-                const maxE = state.mechType === 'grinder' ? 25000 : 35000;
+            if(state.mechType === 'grinder' || state.mechType === 'acc') {
+                const maxE = state.mechType === 'grinder' ? 25000 : 30000;
                 $('val-energy').textContent = Math.round(state.energy * maxE).toLocaleString() + ' kWh/t';
             } else if (state.mechType === 'hph') {
                 const passes = Math.ceil(state.energy * 20);
@@ -439,8 +427,10 @@
         $('sel-pre').addEventListener('change', e => { state.preType = e.target.value; formatPretreatment(); });
         $('sel-mech').addEventListener('change', e => { state.mechType = e.target.value; formatEnergy(); });
         $('sel-post').addEventListener('change', e => { state.postType = e.target.value; formatPost(); updatePostColors(); });
+        
         $('slider-pulp').addEventListener('input', e => { state.pulping = parseFloat(e.target.value); updateComposition(); });
         $('slider-bleach').addEventListener('input', e => { state.bleaching = parseFloat(e.target.value); updateComposition(); });
+        $('slider-refining').addEventListener('input', e => { state.refining = parseFloat(e.target.value); $('val-refining').textContent = Math.round(15 + state.refining * 75) + ' °SR'; });
         $('slider-pre-deg').addEventListener('input', e => { state.preDeg = parseFloat(e.target.value); formatPretreatment(); });
         $('slider-energy').addEventListener('input', e => { state.energy = parseFloat(e.target.value); formatEnergy(); });
         $('slider-post-deg').addEventListener('input', e => { state.postDeg = parseFloat(e.target.value); formatPost(); });
@@ -474,7 +464,7 @@
             const fillLight = new THREE.DirectionalLight(0xaaccff, 0.8); fillLight.position.set(-50, -20, -30); scene.add(fillLight);
             const rimLight = new THREE.DirectionalLight(0xffeedd, 1.2); rimLight.position.set(20, 30, -50); scene.add(rimLight);
 
-            // 4-sided cylinder (Square/Diamond) to represent native Iβ cellulose crystal planes (110 and 200)
+            // Cellulose Iβ crystal planes (110 and 200) - Diamond cross section
             const geo = new THREE.CylinderGeometry(0.16, 0.16, 1, 4); 
             geo.rotateX(Math.PI/2); geo.rotateZ(Math.PI/4); geo.translate(0, 0, 0.5);
             
@@ -495,8 +485,6 @@
             fibrilData.length = 0;
             const cri = BIOMASS_TYPES[state.rawBiomass].cri;
 
-            // Hierarchical Architecture: Microfibrillar bands -> Elementary Fibrils
-            // PERFECTLY STRAIGHT PARALLEL ALIGNMENT
             for (let i = 0; i < PARAMS.FIBERS; i++) {
                 const bundleId = i % PARAMS.BUNDLES;
                 const bandAngle = (bundleId / PARAMS.BUNDLES) * Math.PI * 2;
@@ -533,12 +521,19 @@
         }
 
         function updateShellColors() {
-            const colLig = new THREE.Color(0x4a2c16); const colHem = new THREE.Color(0xb59c4a); const colBleach = new THREE.Color(0xffffff);
-            colLig.lerp(colBleach, state.bleaching); colHem.lerp(colBleach, state.bleaching);
+            // Raw wood is dark brown (#5C3A21). Kraft pulp (Kappa 20-30) is tan (#C19A6B).
+            const rawWoodCol = new THREE.Color(0x5c3a21);
+            const ukpCol = new THREE.Color(0xc19a6b);
+            const bleachedCol = new THREE.Color(0xffffff);
+            
+            // Interpolate based on pulping progress
+            const pulpingCol = rawWoodCol.clone().lerp(ukpCol, state.pulping);
+            // Then interpolate based on bleaching progress
+            const finalMatrixCol = pulpingCol.clone().lerp(bleachedCol, state.bleaching);
+
             let idx = 0;
             for(let i=0; i<PARAMS.FIBERS; i++) {
-                const baseCol = (i % 3 === 0) ? colLig : colHem;
-                for(let j=0; j<PARAMS.SEGMENTS; j++) { shellMesh.setColorAt(idx++, baseCol); }
+                for(let j=0; j<PARAMS.SEGMENTS; j++) { shellMesh.setColorAt(idx++, finalMatrixCol); }
             }
             shellMesh.instanceColor.needsUpdate = true;
         }
@@ -560,7 +555,10 @@
 
             const ligninBlock = Math.min(1.0, state.relComp.lig / 12.0); 
             const hemiBoost = state.relComp.hem / 25.0; 
-            let effectiveEnergy = state.energy * (1.0 - ligninBlock) * (1.0 + hemiBoost * 0.2);
+            
+            // Micro-Refining acts as a huge multiplier for nanoscale ease of defibrillation
+            const refiningBoost = state.refining * 1.5; 
+            let effectiveEnergy = state.energy * (1.0 - ligninBlock) * (1.0 + hemiBoost * 0.2 + refiningBoost);
 
             let enzymeFacilitation = 0;
             if (state.preType === 'enzyme') {
@@ -576,7 +574,6 @@
 
             for (let i = 0; i < PARAMS.FIBERS; i++) {
                 const f = fibrilData[i];
-                // Distance from center determines peeling ease
                 const layerFactor = Math.sqrt(f.bX*f.bX + f.bZ*f.bZ) / PARAMS.RADIUS; 
                 const peel = Math.pow(effectiveEnergy, 1.5) * layerFactor;
                 
@@ -585,25 +582,23 @@
                     const vFray = Math.abs(sY) / (PARAMS.HEIGHT / 2);
                     const lPeel = peel * (0.2 + 0.8 * vFray);
                     
-                    // Expand Microfibrillar Bands (Macro-peel)
-                    const bandSpread = (lPeel * 20.0) + (staticSwelling * 5.0);
+                    // Refining causes macroscopic swelling/fraying
+                    const refFray = state.refining * 2.0 * layerFactor * vFray;
+                    
+                    const bandSpread = (lPeel * 20.0) + (staticSwelling * 5.0) + refFray;
                     const currentBx = f.bX * (1 + bandSpread / PARAMS.RADIUS);
                     const currentBz = f.bZ * (1 + bandSpread / PARAMS.RADIUS);
 
-                    // Expand Elementary Fibrils within Bands (Micro-peel)
-                    const fibrilSpread = Math.max(0, lPeel - 0.2) * 25.0 + (staticSwelling * 5.0);
+                    const fibrilSpread = Math.max(0, lPeel - 0.2) * 25.0 + (staticSwelling * 5.0) + (refFray * 0.5);
                     const currentLx = f.lX * (1 + fibrilSpread / (PARAMS.RADIUS*0.4));
                     const currentLz = f.lZ * (1 + fibrilSpread / (PARAMS.RADIUS*0.4));
 
-                    // PERFECTLY PARALLEL (No Macroscopic Twist)
                     let pX = currentBx + currentLx;
                     let pZ = currentBz + currentLz;
                     let pY = sY;
 
-                    if (effectiveEnergy > 0 || staticSwelling > 0) {
-                        // Crystalline regions resist bending!
-                        // This makes the fibril behave like rigid rods connected by flexible hinges
-                        const stiffness = isCryst ? 0.2 : 1.0; 
+                    if (effectiveEnergy > 0 || staticSwelling > 0 || state.refining > 0) {
+                        const stiffness = isCryst ? 0.15 : 1.0; 
                         
                         pX += Math.sin(t + f.phase) * (lPeel * 2) * stiffness;
                         pZ += Math.cos(t * 0.8 + f.phase) * (lPeel * 2) * stiffness;
@@ -614,11 +609,17 @@
                             pZ += Math.cos(pY * 0.12 + f.phase) * tangle;
                         } else if (state.mechType === 'hph') {
                             pX += Math.sin(pY * 0.05 + f.phase) * lPeel * 3 * stiffness;
-                        } else if (state.mechType === 'super') {
-                            const chaos = lPeel * 22 * (1 - chargeRepulsion * 0.4) * stiffness;
-                            pX += Math.sin(pY * 0.4 + f.phase) * chaos; 
-                            pZ += Math.cos(pY * 0.35 + f.phase) * chaos; 
-                            pY += Math.sin(pX * 0.2) * chaos * 0.5;
+                        } else if (state.mechType === 'acc') {
+                            // Aqueous Counter Collision: High shear cleavage with localized explosive tangling/snapping
+                            const cleavage = lPeel * 18 * (1 - chargeRepulsion * 0.2) * stiffness;
+                            const radAngle = Math.atan2(f.bZ, f.bX);
+                            pX += Math.cos(radAngle) * cleavage;
+                            pZ += Math.sin(radAngle) * cleavage;
+                            
+                            // High-speed water jet collision chaos (causes chain scission and shorter fibrils)
+                            const collisionChaos = lPeel * 12 * stiffness;
+                            pX += Math.sin(pY * 0.8 + f.phase*2) * collisionChaos;
+                            pY += Math.sin(pX * 0.4) * collisionChaos * 0.5;
                         }
                     }
                     return { x: pX, y: pY, z: pZ, lPeel: lPeel };
@@ -644,8 +645,9 @@
                     if (state.mechType === 'hph' && effectiveEnergy > 0 && !cryst) {
                         if (((f.id * 7 + j * 13) % 100 / 100) < effectiveEnergy * 0.8 * (1 - state.relComp.hem / 100)) broken = true;
                     }
-                    if (state.mechType === 'super' && effectiveEnergy > 0) {
-                        if (((f.id * 11 + j * 17) % 100 / 100) < effectiveEnergy * 0.6) broken = true;
+                    if (state.mechType === 'acc' && effectiveEnergy > 0 && !cryst) {
+                        // ACC dual-jet collision causes significant scission (shorter particles than grinder)
+                        if (((f.id * 11 + j * 19) % 100 / 100) < effectiveEnergy * 0.6) broken = true;
                     }
                     if (broken) zMult = 0.1;
                     scaleX *= Math.max(0.12, 1.0 - (localPeel * 0.7));
@@ -653,7 +655,6 @@
                     dummy.position.set(x, y, z);
                     let dist = PARAMS.HEIGHT / PARAMS.SEGMENTS; 
                     if (j < PARAMS.SEGMENTS - 1 && !broken) {
-                        // Check crystallinity of NEXT node for proper lookAt interpolation
                         const nextCryst = isCrystal[idx + 1];
                         const pos2 = getPos(j+1, nextCryst); 
                         dummy.lookAt(pos2.x, pos2.y, pos2.z);
@@ -692,13 +693,42 @@
             else $('warning-box').style.display = 'none';
 
             let baseTS = 45; let baseYM = 3.5; let baseStrain = 2.0; 
-            let app = "Standard paper products, cardboard, packaging. Low nanoscale functionality.";
-            let currentMorph = "Intact Wood Fiber"; let currentAspect = 10;
+            let app = "Standard paper products, cardboard, packaging.";
+            
+            // Core Macro Morphology based on Pulping
+            let currentMorph = "Intact Wood Fiber";
+            let baseDp = BIOMASS_TYPES[state.rawBiomass].dp;
+            
+            if (state.rawBiomass === 'cotton') {
+                currentMorph = "Cotton Linters";
+            } else if (state.pulping > 0.1) {
+                // Kraft pulping drops DP significantly
+                baseDp = baseDp - (state.pulping * 6000); 
+                if (state.relComp.lig < 2) {
+                    currentMorph = "Bleached Kraft Pulp";
+                    baseDp -= (state.bleaching * 1500); // Bleaching causes some further chain degradation
+                } else if (state.relComp.lig < 15) {
+                    currentMorph = "Unbleached Kraft Pulp (UKP)";
+                }
+            }
+            
+            let currentAspect = 80;
 
+            // Refining decreases aspect ratio (cuts fibers/creates fines) but increases strength via internal fibrillation
+            if (state.refining > 0.2 && state.energy < 0.1) {
+                currentMorph = "Refined " + currentMorph;
+                currentAspect = Math.round(80 - (state.refining * 40)); // drops to ~40
+                baseTS += state.refining * 30; // Refining increases paper strength heavily
+                baseDp -= state.refining * 500; // Minor DP drop from mechanical cutting
+                if (state.refining > 0.8) currentMorph = "Microfibrillated Cellulose (MFC)";
+            }
+
+            // Nanoscale Extraction Mapping
             if (isBlocked && state.energy > 0) {
                 currentMorph = "Failed Defibrillation (Recalcitrance)"; currentAspect = 10;
             } else if (effectiveEnergy > 0.8 && state.preType === 'tempo') {
-                currentMorph = "TOCNF fibers"; currentAspect = 450;
+                currentMorph = "TOCNF (Individualized Nanorods)"; currentAspect = 450;
+                baseDp = 600; // TEMPO beta-elimination drops DP
                 baseTS = 250; baseYM = 16.0; baseStrain = 4.0;
                 app = "High-barrier oxygen packaging, transparent flexible electronics, high-end rheology modifiers.";
             } else if (effectiveEnergy > 0.4 && state.preType === 'enzyme' && state.preDeg >= 0.08) {
@@ -707,27 +737,32 @@
                     currentMorph = "Cellulose Nanocrystals (CNC)";
                     app = "Iridescent photonic films, strengthening additive for nanocomposites, emulsion stabilizers.";
                 } else {
-                    currentMorph = "CNF (Hydrolyzed)";
+                    currentMorph = "CNF / CNC Mixture (Hydrolyzed)";
                     app = "Rheology modifiers, hybrid structural films, hydrogel networks.";
                 }
                 currentAspect = Math.round(120 - (95 * chopDegree)); 
+                baseDp = Math.round(2000 - (1800 * chopDegree)); // Plummets toward LODP (Leveling Off DP ~200)
                 baseTS = 180 - (90 * chopDegree); baseYM = 12.0 + (8.0 * chopDegree); baseStrain = 6.0 - (5.0 * chopDegree); 
             } else if (effectiveEnergy > 0.6 || (state.preType === 'enzyme' && state.preDeg < 0.08 && effectiveEnergy > 0.2)) {
                 if(state.mechType === 'grinder' || (state.preType === 'enzyme' && state.preDeg < 0.08)) { 
                     currentMorph = state.preType === 'enzyme' ? "Enzymatic CNF (Flexible)" : "CNF (Entangled Gel Network)"; 
-                    currentAspect = 120; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; 
+                    currentAspect = 120; baseDp = 1500; baseTS = 180; baseYM = 12.0; baseStrain = 6.0; 
                     app = "Strong nanopaper, hydrogels for tissue engineering, thickeners."; 
                 }
-                else if(state.mechType === 'super') { currentMorph = "Highly Branched CNF Web"; currentAspect = 35; baseTS = 130; baseYM = 8.0; baseStrain = 8.0; app = "Absorbent materials, aerogel precursors, filtration membranes."; }
-                else { currentMorph = "Microfibrillated Cellulose (MFC)"; currentAspect = 60; baseTS = 110; baseYM = 9.0; baseStrain = 4.0; app = "Paper coating, cement additives, low-cost bio-fillers."; }
+                else if(state.mechType === 'acc') { 
+                    currentMorph = "ACC-Nanocellulose (Short Fibrils)"; 
+                    currentAspect = 60; baseDp = 800; // Water jet collisions cause scission, dropping DP and AR
+                    baseTS = 190; baseYM = 14.0; baseStrain = 3.5; 
+                    app = "Pickering emulsions, highly amphiphilic coatings, specialized biomedical carriers."; 
+                }
+                else { currentMorph = "Microfibrillated Cellulose (MFC)"; currentAspect = 80; baseDp = 2000; baseTS = 110; baseYM = 9.0; baseStrain = 4.0; app = "Paper coating, cement additives, low-cost bio-fillers."; }
             } else if (effectiveEnergy > 0.1 || staticSwelling > 0.1) {
-                currentMorph = "Partially Delaminated Fiber"; currentAspect = 20;
-                baseTS = 70; baseYM = 5.0;
-            } else if (state.relComp.lig < 2) {
-                currentMorph = "Bleached Cellulose Pulp"; currentAspect = 10;
+                currentMorph = "Swollen / Partially Delaminated Network"; currentAspect = 50;
+                baseDp = baseDp * 0.8;
+                baseTS = 85; baseYM = 6.0;
             }
 
-            if (state.relComp.lig > 5) {
+            if (state.relComp.lig > 5 && state.energy > 0) {
                 baseTS -= state.relComp.lig * 2.5; baseStrain += state.relComp.lig * 0.1; 
                 app = "Hydrophobic barriers, UV-blocking films, unbleached kraft specialties.";
             }
@@ -750,9 +785,10 @@
                 app = "High-wet-strength papers, heavy metal adsorption membranes, advanced functional coatings.";
             }
 
-            state.morphology = currentMorph; state.aspect = currentAspect;
+            state.morphology = currentMorph; state.aspect = currentAspect; state.dp = Math.max(150, Math.round(baseDp));
 
             $('stat-morph').textContent = state.morphology;
+            $('stat-dp').textContent = state.dp.toLocaleString();
             $('stat-ar').textContent = "~ " + state.aspect;
             $('stat-ts').textContent = Math.max(10, baseTS).toFixed(1) + " MPa";
             $('stat-ym').textContent = Math.max(1, baseYM).toFixed(1) + " GPa";
@@ -764,6 +800,7 @@
 
         window.onload = () => {
             initScene(); updateComposition(); buildArchitecture(); formatPretreatment(); formatEnergy(); formatPost();
+            $('val-refining').textContent = '15 °SR';
             setTimeout(() => { $('loader').style.opacity = '0'; setTimeout(() => $('loader').remove(), 500); }, 800);
             loop();
         };
