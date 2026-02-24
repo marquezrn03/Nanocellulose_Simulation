@@ -526,16 +526,25 @@
         }
 
         function updateShellColors() {
-            const rawWoodCol = new THREE.Color(0x5c3a21);
-            const ukpCol = new THREE.Color(0xc19a6b);
-            const bleachedCol = new THREE.Color(0xffffff);
-            
-            const pulpingCol = rawWoodCol.clone().lerp(ukpCol, state.pulping);
-            const finalMatrixCol = pulpingCol.clone().lerp(bleachedCol, state.bleaching);
+            // Direct Lignin-to-Kappa color mapping for perfect realism
+            const lig = state.relComp.lig;
+            const rawCol = new THREE.Color(0x352013); // Dark, moist wood chips
+            const ukpCol = new THREE.Color(0xc2996b); // Beige / Unbleached Kraft paper
+            const bleachCol = new THREE.Color(0xffffff); // Pure white
+
+            let finalCol = new THREE.Color();
+
+            if (lig > 2.0) {
+                const t = Math.min(1.0, (lig - 2.0) / 28.0);
+                finalCol.lerpColors(ukpCol, rawCol, t);
+            } else {
+                const t = Math.max(0.0, lig / 2.0);
+                finalCol.lerpColors(bleachCol, ukpCol, t);
+            }
 
             let idx = 0;
             for(let i=0; i<PARAMS.FIBERS; i++) {
-                for(let j=0; j<PARAMS.SEGMENTS; j++) { shellMesh.setColorAt(idx++, finalMatrixCol); }
+                for(let j=0; j<PARAMS.SEGMENTS; j++) { shellMesh.setColorAt(idx++, finalCol); }
             }
             shellMesh.instanceColor.needsUpdate = true;
         }
@@ -753,7 +762,7 @@
                     app = "Strong nanopaper, hydrogels for tissue engineering, thickeners."; 
                 }
                 else if(state.mechType === 'acc') { 
-                    currentMorph = "ACC-CNF (Non-destructive Nanofibrils)"; 
+                    currentMorph = "ACC-CNF (Short Nanofibrils)"; 
                     currentLen = 1200; baseDp = 1200; yieldPct = 95; solidContent = 0.5; 
                     baseTS = 210; baseYM = 14.0; baseStrain = 3.5; 
                     app = "Pickering emulsions, highly amphiphilic coatings, specialized biomedical carriers."; 
